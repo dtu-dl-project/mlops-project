@@ -1,6 +1,12 @@
 # segmentationsuim
 
-A short description of the project.
+The goal of the project is to develop a model able to perform semantic segmentation on SUIM (Segmentation of Underwater IMagery).
+
+The framework that we are expected to use is the Pytorch - ImageModels, precisely we will focus on Vision Transformer library.
+
+[This is the link of the dataset](https://paperswithcode.com/dataset/suim)
+
+We are expecting to use UNet as baseline and Vision Transformer as principal model. 
 
 ## Project structure
 
