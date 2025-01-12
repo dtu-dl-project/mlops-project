@@ -3,4 +3,4 @@ typer==0.15.1
 fastapi==0.115.6
 uvicorn==0.34.0
 numpy==1.21.0
-gdown 5.2.0
+gdown==5.2.0
