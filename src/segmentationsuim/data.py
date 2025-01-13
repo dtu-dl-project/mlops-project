@@ -11,6 +11,9 @@ import os
 import torch
 from torchvision.transforms.functional import to_pil_image
 from tqdm import tqdm
+from PIL import Image
+from torch.utils.data import random_split
+import time
 
 
 
@@ -76,15 +79,12 @@ def download_dataset():
         print("Dataset downloaded and extracted successfully.")
     else:
         print("The folder is not empty. Skipping download.")
+
+
 def rgb_to_class(mask):
     """
     Converts an RGB mask image into a class map where each unique RGB color in the image 
     corresponds to a unique class ID.
-
-    This function processes the mask image as follows:
-    1. Extracts the unique RGB colors present in the mask.
-    2. Assigns a unique class ID to each unique RGB color.
-    3. Creates a 2D class map where each pixel's value corresponds to the class ID of its RGB color.
 
     :param mask: PIL.Image
         An RGB mask image where each unique color represents a distinct class.
@@ -95,21 +95,25 @@ def rgb_to_class(mask):
     # Convert the PIL Image to a NumPy array
     mask_array = np.array(mask)
 
+    # Start timing for unique color extraction
+    start_time = time.time()
     # Identify unique RGB colors in the mask
-    unique_colors = np.unique(mask_array.reshape(-1, 3), axis=0)
+    unique_colors, inverse_indices = np.unique(
+        mask_array.reshape(-1, 3), axis=0, return_inverse=True
+    )
+    end_time = time.time()
+    print(f"Time for extracting unique colors: {end_time - start_time:.4f} seconds")
 
-    # Map each unique color to a unique class ID
-    color_to_class = {tuple(color): i for i, color in enumerate(unique_colors)}
+    # Create a class map using the inverse indices
+    start_time = time.time()
+    class_map = inverse_indices.reshape(mask_array.shape[:2])
+    end_time = time.time()
+    print(f"Time for creating class map: {end_time - start_time:.4f} seconds")
 
-    # Initialize a 2D array to store class IDs
-    class_map = np.zeros(mask_array.shape[:2], dtype=np.int64)
-
-    # Map each pixel's color to its corresponding class ID
-    for color, class_id in color_to_class.items():
-        # Find all pixels in the mask that match the current color
-        mask_class = np.all(mask_array == np.array(color), axis=-1)
-        # Assign the class ID to the corresponding pixels in the class map
-        class_map[mask_class] = class_id
+    if (end_time - start_time) > 10:
+        # Visualize the mask
+        plt.imshow(class_map)
+        plt.show()
 
     return class_map
     
@@ -371,3 +375,72 @@ class SUIMDatasetProcessed(Dataset):
         mask = transforms.ToTensor()(mask)
 
         return image, mask
+    
+def get_dataloaders(data_path, use_processed, image_transform, mask_transform, batch_size, num_workers, split_ratio):
+
+    train_path = os.path.join(data_path, "train_val")
+    test_path = os.path.join(data_path, "test")
+
+    if use_processed:
+        train_dataset = SUIMDatasetProcessed(train_path)
+        test_dataset = SUIMDatasetProcessed(test_path)
+    else:
+        train_dataset = SUIMDatasetRaw(train_path, image_transform, mask_transform)
+        test_dataset = SUIMDatasetRaw(test_path, image_transform, mask_transform)
+
+    train_size = int(split_ratio * len(train_dataset))
+    val_size = len(train_dataset) - train_size
+    train_data, val_data = random_split(train_dataset, [train_size, val_size])
+
+    train_loader = torch.utils.data.DataLoader(
+        train_data, batch_size=batch_size, shuffle=True, num_workers=num_workers
+    )
+    val_loader = torch.utils.data.DataLoader(
+        val_data, batch_size=batch_size, shuffle=False, num_workers=num_workers
+    )
+    test_loader = torch.utils.data.DataLoader(
+        test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers
+    )
+
+    return train_loader, val_loader, test_loader
+        
+def main():
+    # Define the dataset path
+    data_path = "data/raw"
+
+    train_val_path = os.path.join(data_path, "train_val")
+    test_path = os.path.join(data_path, "test")
+
+    image_transform = transforms.Compose([
+        transforms.Resize((572, 572)),
+        transforms.ToTensor()
+    ])
+
+    mask_transform = transforms.Compose([
+        transforms.Resize((572, 572), interpolation=Image.NEAREST),
+        transforms.ToTensor()
+    ])
+
+    train_loader, val_loader, test_loader = get_dataloaders(data_path=data_path, use_processed=False, image_transform=image_transform, mask_transform=mask_transform, batch_size=32, num_workers=4, split_ratio=0.8)
+
+    # Visualize the first batch of images and masks
+    images, masks = next(iter(train_loader))
+    print(f"Images shape: {images.shape}, Masks shape: {masks.shape}")
+
+    fig, axes = plt.subplots(4, 2, figsize=(12, 24))
+    for i in range(4):
+        image = transforms.ToPILImage()(images[i])
+        mask = transforms.ToPILImage()(masks[i])
+        axes[i, 0].imshow(image)
+        axes[i, 1].imshow(mask, cmap="gray")
+        axes[i, 0].axis("off")
+        axes[i, 1].axis("off")
+    plt.tight_layout()
+    plt.show()
+
+
+if __name__ == "__main__":
+    import cProfile
+    download_dataset()
+    # save output to a file
+    cProfile.run("main()", sort="cumtime", filename="output_sorted.prof")
