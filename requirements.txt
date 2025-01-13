@@ -7,3 +7,4 @@ requests==2.32.3
 numpy==2.2.1
 torchvision==0.20.1
 matplotlib == 3.10.0
+transformers==4.48.0
