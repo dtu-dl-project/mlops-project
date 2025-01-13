@@ -371,22 +371,3 @@ class SUIMDatasetProcessed(Dataset):
         mask = transforms.ToTensor()(mask)
 
         return image, mask
-
-
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
->>>>>>> a9c93a4 (modify data.py)
