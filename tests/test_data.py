@@ -1,3 +1,4 @@
-from torch.utils.data import Dataset
+from segmentationsuim.data import download_dataset
 
-# from segmentationsuim.data import download_dataset
+def test_download_dataset():
+    assert download_dataset is not None
