@@ -5,3 +5,5 @@ uvicorn==0.34.0
 gdown==5.2.0
 requests==2.32.3
 numpy==2.2.1
+torchvision==0.20.1
+matplotlib == 3.10.0
