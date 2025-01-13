@@ -4,6 +4,7 @@ import gdown
 
 
 def download_dataset():
+    """ SUIM Dataset is downloaded if the "../data/raw" directory is empty."""
     test_url = "https://drive.google.com/file/d/1diN3tNe2nR1eV3Px4gqlp6wp3XuLBwDy/view?usp=drive_link"
     train_url = "https://drive.google.com/file/d/1YWjUODQWwQ3_vKSytqVdF4recqBOEe72/view?usp=drive_link"
 
