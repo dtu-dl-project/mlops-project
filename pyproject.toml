@@ -29,4 +29,5 @@ dev = {file = ['requirements_dev.txt']}
 line-length = 120
 
 [tool.coverage.run]
+source = ["segmentationsuim"]
 omit = ["tests/*"]
