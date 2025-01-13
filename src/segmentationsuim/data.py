@@ -1,5 +1,4 @@
 import os
-import requests
 import zipfile
 import gdown
 

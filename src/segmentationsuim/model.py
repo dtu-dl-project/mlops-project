@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from typing import Tuple
 
 
 # Cose da fare e controllare: se diminuisce la dimensione di due pixel ogni volta (unpadding), dropout dopo RELU e weight initialization
