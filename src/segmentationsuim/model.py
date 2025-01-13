@@ -4,13 +4,14 @@ import torch.nn.functional as F
 from typing import Tuple
 
 
-#Cose da fare e controllare: se diminuisce la dimensione di due pixel ogni volta (unpadding), dropout dopo RELU e weight initialization
-#stampa debug dei tensori per vedere le dimensioni
+# Cose da fare e controllare: se diminuisce la dimensione di due pixel ogni volta (unpadding), dropout dopo RELU e weight initialization
+# stampa debug dei tensori per vedere le dimensioni
 class ConvBlock(nn.Module):
     """
     A convolutional block that applies two consecutive convolution layers,
     each followed by batch normalization and ReLU activation.
     """
+
     def __init__(self, in_channels: int, out_channels: int):
         super(ConvBlock, self).__init__()
         self.double_conv = nn.Sequential(
@@ -19,7 +20,7 @@ class ConvBlock(nn.Module):
             nn.ReLU(inplace=True),
             nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1),
             nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True)
+            nn.ReLU(inplace=True),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -35,6 +36,7 @@ class Downscaling(nn.Module):
     """
     A downscaling block that applies max pooling followed by a convolutional block.
     """
+
     def __init__(self, in_channels: int, out_channels: int):
         super(Downscaling, self).__init__()
         self.maxpool = nn.MaxPool2d(kernel_size=2, stride=2)
@@ -55,9 +57,12 @@ class Upscaling(nn.Module):
     An upscaling block that applies transposed convolution for upsampling
     and concatenates the skip connection, followed by a convolutional block.
     """
+
     def __init__(self, in_channels: int, out_channels: int):
         super(Upscaling, self).__init__()
-        self.upsample = nn.ConvTranspose2d(in_channels, in_channels // 2, kernel_size=2, stride=2) #in_channels // 2 since then we will concatenate the encoder part and so the number of channels will double
+        self.upsample = nn.ConvTranspose2d(
+            in_channels, in_channels // 2, kernel_size=2, stride=2
+        )  # in_channels // 2 since then we will concatenate the encoder part and so the number of channels will double
         self.conv_block = ConvBlock(in_channels, out_channels)
 
     def forward(self, x: torch.Tensor, skip: torch.Tensor) -> torch.Tensor:
@@ -67,12 +72,14 @@ class Upscaling(nn.Module):
         :param skip: Skip connection from the encoder path of shape (B, C, H, W).
         :return: Output tensor of shape (B, C_out, H, W).
         """
-        x = self.upsample(x) 
+        x = self.upsample(x)
         x_height, x_width = x.size()[2], x.size()[3]
         skip_height, skip_width = skip.size()[2], skip.size()[3]
-        diffY = skip_height - x_height 
+        diffY = skip_height - x_height
         diffX = skip_width - x_width
-        x = F.pad(x, [diffX // 2, diffX - diffX // 2, diffY // 2, diffY - diffY // 2]) #padding to match the dimensions of the skip connection
+        x = F.pad(
+            x, [diffX // 2, diffX - diffX // 2, diffY // 2, diffY - diffY // 2]
+        )  # padding to match the dimensions of the skip connection
         x = torch.cat([x, skip], dim=1)
         return self.conv_block(x)
 
@@ -81,6 +88,7 @@ class UNet(nn.Module):
     """
     A U-Net model implementation for image segmentation.
     """
+
     def __init__(self, num_input_channels: int = 1, num_output_classes: int = 1, base_feature_size: int = 64):
         """
         Initialize the U-Net model.
@@ -123,13 +131,14 @@ class UNet(nn.Module):
 
         # Final segmentation map
         return self.final_block(x)
-    
+
     def print_summary(self):
         """
         Print the model summary.
         """
         print(self)
         print("Trainable parameters: ", sum(p.numel() for p in self.parameters()))
+
 
 if __name__ == "__main__":
     # Create a U-Net model
