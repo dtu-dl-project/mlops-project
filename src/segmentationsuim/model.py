@@ -2,6 +2,61 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from transformers import SegformerForSemanticSegmentation, Trainer, TrainingArguments
+from data import SUIMDatasetRaw
+import os
+from datasets import Dataset
+
+
+if __name__ == "__main__":
+    # Converting the SUIM dataset to 
+    data_path = "data/raw"
+    train_path = os.path.join(data_path, "train_val")
+    test_path = os.path.join(data_path, "TEST")
+    
+    train_dataset = SUIMDatasetRaw(train_path)
+    test_dataset = SUIMDatasetRaw(test_path)
+
+    def dataset_generator(dataset):
+        for item in dataset:
+            yield item
+
+    train_dataset_hf = Dataset.from_generator(lambda: dataset_generator(test_dataset))
+    test_dataset_hf = Dataset.from_generator(lambda: dataset_generator(test_dataset))
+
+    model_name = "nvidia/mit-b0"  
+    model = SegformerForSemanticSegmentation.from_pretrained(model_name)
+
+    output_dir = "test-segformer-b0-segments-sidewalk-finetuned"
+
+    training_args = TrainingArguments(
+        output_dir=output_dir,
+        learning_rate=6e-5,
+        num_train_epochs=1,
+        per_device_train_batch_size=8,
+        per_device_eval_batch_size=8,
+        save_total_limit=2,
+        eval_strategy="steps",
+        save_strategy="steps",
+        save_steps=20,
+        eval_steps=20,
+        logging_steps=1,
+        eval_accumulation_steps=5,
+        load_best_model_at_end=True,
+        remove_unused_columns=False,
+        #push_to_hub=True,
+        #report_to="wandb",
+    )
+
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=train_dataset_hf,
+        eval_dataset=test_dataset_hf,
+    )
+
+    trainer.train()
+
 
 # Cose da fare e controllare: se diminuisce la dimensione di due pixel ogni volta (unpadding), dropout dopo RELU e weight initialization
 # stampa debug dei tensori per vedere le dimensioni
@@ -137,9 +192,3 @@ class UNet(nn.Module):
         """
         print(self)
         print("Trainable parameters: ", sum(p.numel() for p in self.parameters()))
-
-
-if __name__ == "__main__":
-    # Create a U-Net model
-    model = UNet(num_input_channels=3, num_output_classes=10, base_feature_size=64)
-    model.print_summary()
