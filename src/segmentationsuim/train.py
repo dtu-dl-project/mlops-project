@@ -11,7 +11,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-unet = UNet(3, 8)  # 3 input channels, 1 output channel (not true)
+unet = UNet(3, 8)  # 3 input channels, 8 output channels
 
 
 class UNetModule(L.LightningModule):
@@ -19,15 +19,24 @@ class UNetModule(L.LightningModule):
         super().__init__()
         self.unet = unet
 
-    def training_step(self, batch, batch_idx):
+    def step(self, batch, batch_idx):
         x, y = batch
         y_hat = self.unet(x)
-
-        y = y.squeeze(1)  # remove channel dimension to make cross_entropy happy
-
+        y = y.squeeze(1)
         loss = F.cross_entropy(y_hat, y)
+        return loss
+
+    def training_step(self, batch, batch_idx):
+        loss = self.step(batch, batch_idx)
 
         self.log("train_loss", loss, on_step=True, on_epoch=False, prog_bar=True, logger=True)
+
+        return loss
+
+    def validation_step(self, batch, batch_idx):
+        loss = self.step(batch, batch_idx)
+
+        self.log("val_loss", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
 
         return loss
 
@@ -58,8 +67,8 @@ def main():
     )
 
     model = UNetModule(unet)
-    trainer = L.Trainer(max_epochs=10)
-    trainer.fit(model, train_dataloaders=train_loader)
+    trainer = L.Trainer()
+    trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=val_loader)
 
 
 if __name__ == "__main__":
