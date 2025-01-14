@@ -13,9 +13,8 @@ from torch.utils.data import random_split
 import time
 
 
-
 def download_dataset():
-    """ SUIM Dataset is downloaded if the "../data/raw" directory is empty."""
+    """SUIM Dataset is downloaded if the "../data/raw" directory is empty."""
     test_url = "https://drive.google.com/file/d/1diN3tNe2nR1eV3Px4gqlp6wp3XuLBwDy/view?usp=drive_link"
     train_url = "https://drive.google.com/file/d/1YWjUODQWwQ3_vKSytqVdF4recqBOEe72/view?usp=drive_link"
 
@@ -80,7 +79,7 @@ def download_dataset():
 
 def rgb_to_class(mask):
     """
-    Converts an RGB mask image into a class map where each unique RGB color in the image 
+    Converts an RGB mask image into a class map where each unique RGB color in the image
     corresponds to a unique class ID.
 
     :param mask: PIL.Image
@@ -95,9 +94,7 @@ def rgb_to_class(mask):
     # Start timing for unique color extraction
     start_time = time.time()
     # Identify unique RGB colors in the mask
-    unique_colors, inverse_indices = np.unique(
-        mask_array.reshape(-1, 3), axis=0, return_inverse=True
-    )
+    unique_colors, inverse_indices = np.unique(mask_array.reshape(-1, 3), axis=0, return_inverse=True)
     end_time = time.time()
     print(f"Time for extracting unique colors: {end_time - start_time:.4f} seconds")
 
@@ -113,7 +110,8 @@ def rgb_to_class(mask):
         plt.show()
 
     return class_map
-    
+
+
 class SUIMDatasetRaw(Dataset):
     """
     A PyTorch Dataset class to load raw images and corresponding masks for the SUIM dataset.
@@ -142,6 +140,7 @@ class SUIMDatasetRaw(Dataset):
     __getitem__(idx):
         Returns the transformed image and mask for the given index.
     """
+
     def __init__(self, data_path: str, image_transform=None, mask_transform=None):
         """
         Initialize the SUIMDatasetRaw.
@@ -237,7 +236,7 @@ class SUIMDatasetRaw(Dataset):
             # Check if the transformation returned a tensor
             if isinstance(mask, torch.Tensor):
                 # Ensure mask is of type long and has a single channel
-                #visualize the mask
+                # visualize the mask
                 print(mask.shape)
             else:
                 # If still a PIL image, convert it to a tensor
@@ -255,7 +254,7 @@ class SUIMDatasetRaw(Dataset):
 def save_processed_dataset(dataset, output_path):
     """
     Save the processed dataset (images and masks) into the specified output folder.
-    
+
     :param dataset: The dataset object to process.
     :param output_path: The root path where the processed dataset will be saved.
     """
@@ -290,6 +289,7 @@ def save_processed_dataset(dataset, output_path):
 
     print(f"Processed data saved to {output_path}.")
 
+
 class SUIMDatasetProcessed(Dataset):
     """
     A PyTorch Dataset for loading processed images and masks for the SUIM dataset.
@@ -310,10 +310,11 @@ class SUIMDatasetProcessed(Dataset):
         - Image: RGB format with shape (3, H, W).
         - Mask: Single-channel format with shape (1, H, W).
     """
+
     def __init__(self, data_path: str):
         """
         Initialize the SUIM dataset.
-        
+
         :param data_path: str
             Path to the dataset folder. It should contain `images` and `masks` subfolders.
         """
@@ -372,9 +373,9 @@ class SUIMDatasetProcessed(Dataset):
         mask = transforms.ToTensor()(mask)
 
         return image, mask
-    
-def get_dataloaders(data_path, use_processed, image_transform, mask_transform, batch_size, num_workers, split_ratio):
 
+
+def get_dataloaders(data_path, use_processed, image_transform, mask_transform, batch_size, num_workers, split_ratio):
     train_path = os.path.join(data_path, "train_val")
     test_path = os.path.join(data_path, "TEST")
 
@@ -389,33 +390,34 @@ def get_dataloaders(data_path, use_processed, image_transform, mask_transform, b
     val_size = len(train_dataset) - train_size
     train_data, val_data = random_split(train_dataset, [train_size, val_size])
 
-    train_loader = torch.utils.data.DataLoader(
-        train_data, batch_size=batch_size, shuffle=True, num_workers=num_workers
-    )
-    val_loader = torch.utils.data.DataLoader(
-        val_data, batch_size=batch_size, shuffle=False, num_workers=num_workers
-    )
+    train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=num_workers)
+    val_loader = torch.utils.data.DataLoader(val_data, batch_size=batch_size, shuffle=False, num_workers=num_workers)
     test_loader = torch.utils.data.DataLoader(
         test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers
     )
 
     return train_loader, val_loader, test_loader
-        
+
+
 def main():
     # Define the dataset path
     data_path = "data/raw"
 
-    image_transform = transforms.Compose([
-        transforms.Resize((572, 572)),
-        transforms.ToTensor()
-    ])
+    image_transform = transforms.Compose([transforms.Resize((572, 572)), transforms.ToTensor()])
 
-    mask_transform = transforms.Compose([
-        transforms.Resize((572, 572), interpolation=Image.NEAREST),
-        transforms.ToTensor()
-    ])
+    mask_transform = transforms.Compose(
+        [transforms.Resize((572, 572), interpolation=Image.NEAREST), transforms.ToTensor()]
+    )
 
-    train_loader, val_loader, test_loader = get_dataloaders(data_path=data_path, use_processed=False, image_transform=image_transform, mask_transform=mask_transform, batch_size=32, num_workers=4, split_ratio=0.8)
+    train_loader, val_loader, test_loader = get_dataloaders(
+        data_path=data_path,
+        use_processed=False,
+        image_transform=image_transform,
+        mask_transform=mask_transform,
+        batch_size=32,
+        num_workers=4,
+        split_ratio=0.8,
+    )
 
     # Visualize the first batch of images and masks
     images, masks = next(iter(train_loader))
@@ -435,6 +437,7 @@ def main():
 
 if __name__ == "__main__":
     import cProfile
+
     download_dataset()
     # save output to a file
     cProfile.run("main()", sort="cumtime", filename="output_sorted.prof")

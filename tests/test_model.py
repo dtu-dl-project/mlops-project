@@ -1,6 +1,7 @@
 from segmentationsuim.model import Downscaling
 import torch
 
+
 def test_downscaling():
     block = Downscaling(3, 64)
 
