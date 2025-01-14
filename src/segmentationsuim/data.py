@@ -208,44 +208,49 @@ class SUIMDatasetRaw(Dataset):
         :return: tuple
             A tuple containing the transformed image (Tensor) and mask (Tensor with class IDs).
         """
+        # Retrieve paths
         image_path, mask_path = self.data[idx]
 
-        # Load image and mask as PIL Images
+        # Log paths for debugging
+        logger.debug(f"Loading image from: {image_path}")
+        logger.debug(f"Loading mask from: {mask_path}")
+
+        # Load the image and mask as PIL images
         image = Image.open(image_path).convert("RGB")
         mask = Image.open(mask_path)
 
-        # Convert mask to a class map (categorical class IDs)
+        # Convert the mask from RGB to a class map
         mask = rgb_to_class(mask)
+        logger.debug(f"Converted mask to class map with shape {mask.shape} and unique values: {np.unique(mask)}")
 
         # Apply transformations to the image
         if self.image_transform:
             image = self.image_transform(image)
+            logger.debug(f"Image transformed with shape: {image.shape}")
         else:
             image = transforms.ToTensor()(image)
+            logger.debug(f"Image converted to Tensor with shape: {image.shape}")
 
-        # Apply transformations to the mask
         # Apply transformations to the mask
         if self.mask_transform:
-            # Convert the mask to a PIL Image for resizing and other transformations
-            mask = Image.fromarray(mask.astype(np.uint8), mode="L")  # Ensure grayscale mod
+            # Convert mask to PIL Image for transformations
+            mask_pil = Image.fromarray(mask.astype(np.uint8), mode="L")
+            mask = self.mask_transform(mask_pil)
+            logger.debug(f"Mask transformed with shape: {mask.size if isinstance(mask, Image.Image) else mask.shape}")
 
-            # Apply the transformation (e.g., resizing)
-            mask = self.mask_transform(mask)
-
-            # Check if the transformation returned a tensor
-            if isinstance(mask, torch.Tensor):
-                # Ensure mask is of type long and has a single channel
-                # visualize the mask
-                logger.debug(mask.shape)
-            else:
-                # If still a PIL image, convert it to a tensor
-                mask = transforms.ToTensor()(mask)
+            # Convert back to NumPy array and then to tensor
+            mask_array = np.array(mask)
+            mask_tensor = torch.tensor(mask_array, dtype=torch.uint8)
         else:
-            # Without transformations, convert the mask to a long tensor
-            mask = Image.fromarray(mask.astype(np.uint8), mode="L")  # Ensure grayscale mod
-            mask = transforms.ToTensor()(mask)
+            # Convert directly to tensor
+            mask_tensor = torch.tensor(mask, dtype=torch.uint8)
 
-        return image, mask
+        # Log final mask properties
+        logger.debug(f"Final mask tensor shape: {mask_tensor.shape}")
+        logger.debug(f"Final mask tensor dtype: {mask_tensor.dtype}")
+        logger.debug(f"Final mask tensor unique values: {torch.unique(mask_tensor)}")
+
+        return image, mask_tensor
 
 
 def save_processed_dataset(dataset, output_path):
@@ -276,13 +281,17 @@ def save_processed_dataset(dataset, output_path):
         # Convert image to PIL format (RGB)
         image_pil = to_pil_image(image)
 
+        # Convert mask tensor to uint8 for PIL compatibility
+        if mask.dtype != torch.uint8:
+            mask = mask.to(torch.uint8)
+
         logger.debug(f"Mask shape: {mask.shape}")
         logger.debug(f"Mask min: {mask.min()}, max: {mask.max()}")
         logger.debug(f"Mask unique values: {torch.unique(mask)}")
         logger.debug(f"Mask dtype: {mask.dtype}")
 
         # Convert mask to PIL format (Grayscale)
-        mask_pil = to_pil_image(mask)
+        mask_pil = Image.fromarray(mask.cpu().numpy(), mode="L")
 
         # Save image and mask as PNG files
         image_pil.save(os.path.join(images_dir, f"{idx:05d}.png"))
@@ -301,7 +310,7 @@ class SUIMDatasetProcessed(Dataset):
     ----------
     data_path : str
         Path to the dataset folder containing `images` and `masks` subfolders.
-        It shoul be data/processed/train_val or data/processed/test.
+        It should be data/processed/train_val or data/processed/test.
     data : list of tuples
         A list of tuples where each tuple contains the paths of an image and its corresponding mask.
 
@@ -312,7 +321,7 @@ class SUIMDatasetProcessed(Dataset):
     __getitem__(idx):
         Loads and returns the image and mask at the specified index as PyTorch tensors.
         - Image: RGB format with shape (3, H, W).
-        - Mask: Single-channel format with shape (1, H, W).
+        - Mask: Single-channel format with shape (H, W).
     """
 
     def __init__(self, data_path: str):
@@ -363,7 +372,7 @@ class SUIMDatasetProcessed(Dataset):
         :return: tuple
             A tuple containing:
             - image (torch.Tensor): RGB image tensor with shape (3, H, W).
-            - mask (torch.Tensor): Single-channel mask tensor with shape (1, H, W).
+            - mask (torch.Tensor): Single-channel mask tensor with shape (H, W).
         """
         # Load image and mask as PIL Images
         image_path, mask_path = self.data[idx]
@@ -373,8 +382,8 @@ class SUIMDatasetProcessed(Dataset):
         # Convert image to tensor with shape (3, H, W)
         image = transforms.ToTensor()(image)
 
-        # Convert mask to tensor with shape (1, H, W)
-        mask = transforms.ToTensor()(mask)
+        # Convert mask to tensor with shape (H, W) (no channel dimension for masks)
+        mask = torch.tensor(np.array(mask), dtype=torch.uint8)  # Ensure mask stays uint8
 
         logger.debug(f"Image shape: {image.shape}, Mask shape: {mask.shape}")
         logger.debug(f"Image min: {image.min()}, max: {image.max()}")
@@ -433,7 +442,7 @@ def visualize_dataset(images, masks, batch_size=4):
         axes[i, 0].set_title(f"Image {i + 1}")
         axes[i, 0].axis("off")
 
-        axes[i, 1].imshow(masks[i].permute(1, 2, 0), cmap="tab20")
+        axes[i, 1].imshow(masks[i], cmap="tab20")
         axes[i, 1].set_title(f"Mask {i + 1}")
         axes[i, 1].axis("off")
     plt.tight_layout()
@@ -451,9 +460,7 @@ def main(use_processed=False):
 
     image_transform = transforms.Compose([transforms.Resize((572, 572)), transforms.ToTensor()])
 
-    mask_transform = transforms.Compose(
-        [transforms.Resize((572, 572), interpolation=Image.NEAREST), transforms.ToTensor()]
-    )
+    mask_transform = transforms.Compose([transforms.Resize((572, 572), interpolation=Image.NEAREST)])
 
     download_dataset()
 
@@ -493,7 +500,7 @@ def main(use_processed=False):
         plt.axis("off")
 
         plt.subplot(1, 2, 2)
-        plt.imshow(mask.squeeze(0), cmap="tab20")
+        plt.imshow(mask, cmap="tab20")
         plt.title("Mask")
         plt.axis("off")
 
@@ -553,4 +560,4 @@ def main(use_processed=False):
 
 
 if __name__ == "__main__":
-    main(use_processed=True)
+    main(use_processed=False)
