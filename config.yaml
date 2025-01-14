@@ -1,0 +1,7 @@
+data_loader:
+  batch_size: 4
+  workers: 4
+  split_ratio: 0.8
+training:
+  optimizer:
+    lr: 1e-3

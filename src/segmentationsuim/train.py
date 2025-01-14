@@ -1,3 +1,4 @@
+from omegaconf import DictConfig
 from segmentationsuim.model import UNet
 from segmentationsuim.data import download_dataset, get_dataloaders
 
@@ -8,6 +9,9 @@ import torch as T
 from PIL import Image
 import logging
 
+import hydra
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -15,9 +19,10 @@ unet = UNet(3, 8)  # 3 input channels, 8 output channels
 
 
 class UNetModule(L.LightningModule):
-    def __init__(self, unet):
+    def __init__(self, unet, lr):
         super().__init__()
         self.unet = unet
+        self.lr = lr
 
     def step(self, batch, batch_idx):
         x, y = batch
@@ -41,10 +46,12 @@ class UNetModule(L.LightningModule):
         return loss
 
     def configure_optimizers(self):
-        return T.optim.Adam(self.parameters(), lr=1e-3)
+        return T.optim.Adam(self.parameters(), lr=self.lr)
 
 
-def main():
+@hydra.main(version_base=None, config_path="../../", config_name="config")
+def main(cfg: DictConfig) -> None:
+    logger.info(f"Configuration: {cfg}")
     logging.basicConfig(level=logging.INFO)
 
     download_dataset()
@@ -61,12 +68,12 @@ def main():
         use_processed=False,
         image_transform=image_transform,
         mask_transform=mask_transform,
-        batch_size=4,
-        num_workers=4,
-        split_ratio=0.8,
+        batch_size=cfg.data_loader.batch_size,
+        num_workers=cfg.data_loader.workers,
+        split_ratio=cfg.data_loader.split_ratio,
     )
 
-    model = UNetModule(unet)
+    model = UNetModule(unet, lr=cfg.training.optimizer.lr)
     trainer = L.Trainer()
     trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=val_loader)
 
