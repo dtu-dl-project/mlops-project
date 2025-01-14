@@ -1,5 +1,5 @@
 from segmentationsuim.model import UNet
-from segmentationsuim.data import get_dataloaders
+from segmentationsuim.data import download_dataset, get_dataloaders
 
 from torchvision import transforms
 import lightning as L
@@ -38,6 +38,7 @@ class UNetModule(L.LightningModule):
 def main():
     logging.basicConfig(level=logging.INFO)
 
+    download_dataset()
     data_path = "data/raw"
 
     image_transform = transforms.Compose([transforms.Resize((572, 572)), transforms.ToTensor()])

@@ -60,21 +60,21 @@ def download_dataset():
 
                 # Extract if it's a zip file
                 if output_path.endswith(".zip"):
-                    logger.info(f"Extracting {output_path}...")
+                    logger.debug(f"Extracting {output_path}...")
                     try:
                         with zipfile.ZipFile(output_path, "r") as zip_ref:
                             for file_name in zip_ref.namelist():
                                 zip_ref.extract(file_name, data_path_raw)
-                                logger.info(f"Extracted: {file_name}")
-                        logger.info(f"Extracted {file['name']} to {data_path_raw}.")
+                                logger.debug(f"Extracted: {file_name}")
+                        logger.debug(f"Extracted {file['name']} to {data_path_raw}.")
                     except zipfile.BadZipFile:
-                        logger.info(f"Failed to extract {file['name']}. The file may be corrupted.")
+                        logger.debug(f"Failed to extract {file['name']}. The file may be corrupted.")
 
                     # Delete the zip file after extraction
                     os.remove(output_path)
-                    logger.info(f"Deleted {output_path} after extraction.")
+                    logger.debug(f"Deleted {output_path} after extraction.")
             else:
-                logger.info(f"{file['name']} already exists, skipping download.")
+                logger.debug(f"{file['name']} already exists, skipping download.")
         logger.info("Dataset downloaded and extracted successfully.")
     else:
         logger.info("The folder is not empty. Skipping download.")
@@ -240,7 +240,7 @@ class SUIMDatasetRaw(Dataset):
             if isinstance(mask, torch.Tensor):
                 # Ensure mask is of type long and has a single channel
                 # visualize the mask
-                logger.info(mask.shape)
+                logger.debug(mask.shape)
             else:
                 # If still a PIL image, convert it to a tensor
                 mask = transforms.ToTensor()(mask)
