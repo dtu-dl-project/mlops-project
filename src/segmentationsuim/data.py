@@ -1,5 +1,4 @@
 import os
-import zipfile
 import gdown
 from torch.utils.data import Dataset
 from PIL import Image
@@ -17,19 +16,10 @@ logger = logging.getLogger(__name__)
 
 
 def download_dataset():
-    """SUIM Dataset is downloaded if the "../data/raw" directory is empty."""
-    test_url = "https://drive.google.com/file/d/1diN3tNe2nR1eV3Px4gqlp6wp3XuLBwDy/view?usp=drive_link"
-    train_url = "https://drive.google.com/file/d/1YWjUODQWwQ3_vKSytqVdF4recqBOEe72/view?usp=drive_link"
-
-    test_ID = test_url.split("/d/")[1].split("/view")[0]
-    train_ID = train_url.split("/d/")[1].split("/view")[0]
+    """Download and extract the SUIM dataset if the "../data/raw" directory is empty."""
+    url = "https://drive.google.com/file/d/1XFCe0DPhRxjJZmOtyxTIxrN247YLlLaQ/view"
 
     data_path_raw = "data/raw"
-
-    files = [
-        {"id": test_ID, "name": "test.zip"},
-        {"id": train_ID, "name": "train_val.zip"},
-    ]
 
     # Ensure the directory exists
     os.makedirs(data_path_raw, exist_ok=True)
@@ -40,42 +30,46 @@ def download_dataset():
     if not folder_content:
         logger.info("Dataset folder empty, downloading dataset...")
 
-        for file in files:
-            file_url = f"https://drive.google.com/uc?id={file['id']}"
-            output_path = os.path.join(data_path_raw, file["name"])
+        logger.info(f"Downloading dataset from {url}...")
 
-            # Download the file
-            if not os.path.exists(output_path):
-                logger.info(f"Downloading {file['name']} from {file_url}...")
-                downloaded = gdown.download(file_url, output_path, quiet=False, fuzzy=True)
+        # Download the file using gdown
+        downloaded = gdown.download(url, os.path.join(data_path_raw, "SUIM.tar.gz"), quiet=False, fuzzy=True)
 
-                # Check if the file was downloaded successfully
-                if downloaded is None:
-                    logger.info(f"Failed to download {file['name']}. Skipping...")
-                    continue
+        # Check if the file was downloaded successfully
+        if downloaded is None:
+            logger.error("Failed to download the dataset. Exiting...")
+        else:
+            logger.info(
+                f"Downloaded dataset to {data_path_raw}. File size: {os.path.getsize(downloaded) / (1024 * 1024):.2f} MB"
+            )
 
-                logger.info(
-                    f"Downloaded {file['name']} to {output_path}. File size: {os.path.getsize(output_path) / (1024 * 1024):.2f} MB"
-                )
+            # Extract the .tar.gz file
+            try:
+                logger.info("Extracting SUIM.tar.gz...")
+                os.system(f"tar -xvf {os.path.join(data_path_raw, 'SUIM.tar.gz')} -C {data_path_raw}")
+                logger.info("Extraction completed.")
 
-                # Extract if it's a zip file
-                if output_path.endswith(".zip"):
-                    logger.debug(f"Extracting {output_path}...")
-                    try:
-                        with zipfile.ZipFile(output_path, "r") as zip_ref:
-                            for file_name in zip_ref.namelist():
-                                zip_ref.extract(file_name, data_path_raw)
-                                logger.debug(f"Extracted: {file_name}")
-                        logger.debug(f"Extracted {file['name']} to {data_path_raw}.")
-                    except zipfile.BadZipFile:
-                        logger.debug(f"Failed to extract {file['name']}. The file may be corrupted.")
+                # Delete the .tar.gz file
+                os.remove(os.path.join(data_path_raw, "SUIM.tar.gz"))
+                logger.info("Deleted SUIM.tar.gz after extraction.")
 
-                    # Delete the zip file after extraction
-                    os.remove(output_path)
-                    logger.debug(f"Deleted {output_path} after extraction.")
-            else:
-                logger.debug(f"{file['name']} already exists, skipping download.")
-        logger.info("Dataset downloaded and extracted successfully.")
+                # Move contents of SUIM_fix to data/raw and delete SUIM_fix
+                extracted_folder = os.path.join(data_path_raw, "SUIM_fix")
+                if os.path.exists(extracted_folder):
+                    for item in os.listdir(extracted_folder):
+                        item_path = os.path.join(extracted_folder, item)
+                        new_path = os.path.join(data_path_raw, item)
+                        os.rename(item_path, new_path)  # Move files/folders up one level
+                        logger.info(f"Moved {item} to {data_path_raw}.")
+
+                    # Remove the SUIM_fix folder
+                    os.rmdir(extracted_folder)
+                    logger.info("Deleted SUIM_fix folder.")
+
+            except Exception as e:
+                logger.error(f"Failed to extract and organize files: {e}")
+
+        logger.info("Dataset downloaded and organized successfully.")
     else:
         logger.info("The folder is not empty. Skipping download.")
 
@@ -149,7 +143,8 @@ class SUIMDatasetRaw(Dataset):
         Initialize the SUIMDatasetRaw.
 
         :param data_path: str
-            Path to the dataset folder. It should contain `images` and `masks` subfolders.
+            Path to the dataset folder. It should be data/raw/train_val or data/raw/TEST.
+            It should contain `images` and `masks` subfolders.
         :param image_transform: callable, optional
             Transformations to be applied to the images (e.g., resizing, normalization, etc.).
         :param mask_transform: callable, optional
@@ -161,13 +156,14 @@ class SUIMDatasetRaw(Dataset):
 
         self.data = []
 
+        counter = 0
+
         # Ensure the dataset folder exists
         os.makedirs(data_path, exist_ok=True)
 
         # Define paths for images and masks
         images_path = os.path.join(data_path, "images")
         masks_path = os.path.join(data_path, "masks")
-        count = 0
 
         # Check if the images and masks folders exist
         if not os.path.exists(images_path) or not os.path.exists(masks_path):
@@ -182,11 +178,11 @@ class SUIMDatasetRaw(Dataset):
 
             if os.path.exists(mask_path):
                 logger.debug(f"Found mask for {image_name}.")
-                count += 1
+                counter += 1
                 self.data.append((image_path, mask_path))
             else:
                 logger.info(f"Mask not found for {image_name}. Skipping...")
-        logger.info(f"Loaded {count} images and masks.")
+        logger.info(f"Dataset loaded with  {counter} images and masks.")
 
     def __len__(self):
         """
@@ -246,10 +242,8 @@ class SUIMDatasetRaw(Dataset):
                 mask = transforms.ToTensor()(mask)
         else:
             # Without transformations, convert the mask to a long tensor
-            mask = torch.tensor(mask, dtype=torch.int32).unsqueeze(0)
-
-        # Debug shapes after applying transforms
-        logger.debug(f"After transformation - Image shape: {image.shape}, Mask shape: {mask.shape}")
+            mask = Image.fromarray(mask.astype(np.uint8), mode="L")  # Ensure grayscale mod
+            mask = transforms.ToTensor()(mask)
 
         return image, mask
 
@@ -260,6 +254,7 @@ def save_processed_dataset(dataset, output_path):
 
     :param dataset: The dataset object to process.
     :param output_path: The root path where the processed dataset will be saved.
+                        It should be data/processed/train_val or data/processed/test.
     """
     images_dir = os.path.join(output_path, "images")
     masks_dir = os.path.join(output_path, "masks")
@@ -281,6 +276,11 @@ def save_processed_dataset(dataset, output_path):
         # Convert image to PIL format (RGB)
         image_pil = to_pil_image(image)
 
+        logger.debug(f"Mask shape: {mask.shape}")
+        logger.debug(f"Mask min: {mask.min()}, max: {mask.max()}")
+        logger.debug(f"Mask unique values: {torch.unique(mask)}")
+        logger.debug(f"Mask dtype: {mask.dtype}")
+
         # Convert mask to PIL format (Grayscale)
         mask_pil = to_pil_image(mask)
 
@@ -301,6 +301,7 @@ class SUIMDatasetProcessed(Dataset):
     ----------
     data_path : str
         Path to the dataset folder containing `images` and `masks` subfolders.
+        It shoul be data/processed/train_val or data/processed/test.
     data : list of tuples
         A list of tuples where each tuple contains the paths of an image and its corresponding mask.
 
@@ -342,7 +343,7 @@ class SUIMDatasetProcessed(Dataset):
                 self.data.append((image_path, mask_path))
             else:
                 logger.info(f"Mask not found for {image_name}. Skipping...")
-        logger.info(f"Loaded {len(self.data)} images and masks.")
+        logger.info(f"Dataset loaded with {len(self.data)} images and masks.")
 
     def __len__(self):
         """
@@ -375,17 +376,27 @@ class SUIMDatasetProcessed(Dataset):
         # Convert mask to tensor with shape (1, H, W)
         mask = transforms.ToTensor()(mask)
 
+        logger.debug(f"Image shape: {image.shape}, Mask shape: {mask.shape}")
+        logger.debug(f"Image min: {image.min()}, max: {image.max()}")
+        logger.debug(f"Mask min: {mask.min()}, max: {mask.max()}")
+        logger.debug(f"Mask unique values: {torch.unique(mask)}")
+        logger.debug(f"Mask dtype: {mask.dtype}")
+        logger.debug(f"Image dtype: {image.dtype}")
+
         return image, mask
 
 
 def get_dataloaders(data_path, use_processed, image_transform, mask_transform, batch_size, num_workers, split_ratio):
     train_path = os.path.join(data_path, "train_val")
-    test_path = os.path.join(data_path, "TEST")
+    test_path = os.path.join(data_path, "test")
 
     if use_processed:
+        logger.info("Using processed dataset...")
         train_dataset = SUIMDatasetProcessed(train_path)
         test_dataset = SUIMDatasetProcessed(test_path)
     else:
+        logger.info("Using raw dataset...")
+        logger.info("Processing the dataset...")
         train_dataset = SUIMDatasetRaw(train_path, image_transform, mask_transform)
         test_dataset = SUIMDatasetRaw(test_path, image_transform, mask_transform)
 
@@ -402,7 +413,36 @@ def get_dataloaders(data_path, use_processed, image_transform, mask_transform, b
     return train_loader, val_loader, test_loader
 
 
-def main():
+def visualize_dataset(images, masks, batch_size=4):
+    """
+    Visualizes a batch of images and their corresponding masks.
+
+    :param images: Tensor
+        Batch of images with shape (B, C, H, W).
+    :param masks: Tensor
+        Batch of masks with shape (B, H, W).
+    :param batch_size: int
+        Number of images/masks to visualize.
+    """
+    fig, axes = plt.subplots(batch_size, 2, figsize=(8, batch_size * 2))
+    for i in range(batch_size):
+        axes[i, 0].imshow(images[i].permute(1, 2, 0))
+        axes[i, 0].set_title(f"Image {i + 1}")
+        axes[i, 0].axis("off")
+
+        axes[i, 1].imshow(masks[i].permute(1, 2, 0), cmap="tab20")
+        axes[i, 1].set_title(f"Mask {i + 1}")
+        axes[i, 1].axis("off")
+    plt.tight_layout()
+    plt.show()
+
+
+def main(use_processed=False):
+    """
+    The main function is used to test the dataset classes and functions.
+    Set the `save_and_use_saved` variable to `True` to save the processed dataset and load it for analysis.
+    """
+    logging.basicConfig(level=logging.INFO)
     # Define the dataset path
     data_path = "data/raw"
 
@@ -412,35 +452,102 @@ def main():
         [transforms.Resize((572, 572), interpolation=Image.NEAREST), transforms.ToTensor()]
     )
 
-    train_loader, val_loader, test_loader = get_dataloaders(
-        data_path=data_path,
-        use_processed=False,
-        image_transform=image_transform,
-        mask_transform=mask_transform,
-        batch_size=32,
-        num_workers=4,
-        split_ratio=0.8,
-    )
+    download_dataset()
 
-    # Visualize the first batch of images and masks
-    images, masks = next(iter(train_loader))
-    logger.info(f"Images shape: {images.shape}, Masks shape: {masks.shape}")
+    if use_processed:
+        train_data_path = os.path.join(data_path, "train_val")
+        test_data_path = os.path.join(data_path, "test")
 
-    fig, axes = plt.subplots(4, 2, figsize=(12, 24))
-    for i in range(4):
-        image = transforms.ToPILImage()(images[i])
-        mask = transforms.ToPILImage()(masks[i])
-        axes[i, 0].imshow(image)
-        axes[i, 1].imshow(mask, cmap="gray")
-        axes[i, 0].axis("off")
-        axes[i, 1].axis("off")
-    plt.tight_layout()
-    plt.show()
+        train_val_dataset = SUIMDatasetRaw(train_data_path, image_transform, mask_transform)
+        test_dataset = SUIMDatasetRaw(test_data_path, image_transform, mask_transform)
+
+        # Save the processed dataset
+        processed_path_train = "data/processed/train_val"
+        save_processed_dataset(train_val_dataset, processed_path_train)
+
+        processed_path_test = "data/processed/test"
+        save_processed_dataset(test_dataset, processed_path_test)
+
+        # Load the processed dataset
+        train_val_dataset_1 = SUIMDatasetProcessed(processed_path_train)
+
+        random_idx = np.random.randint(0, len(train_val_dataset_1))
+
+        # analyze the processed dataset
+        image, mask = train_val_dataset_1[random_idx]
+        logger.info(f"Image shape: {image.shape}, Mask shape: {mask.shape}")
+        logger.info(f"Image min: {image.min()}, max: {image.max()}")
+        logger.info(f"Mask min: {mask.min()}, max: {mask.max()}")
+        logger.info(f"Mask unique values: {torch.unique(mask)}")
+        logger.info(f"Mask dtype: {mask.dtype}")
+        logger.info(f"Image dtype: {image.dtype}")
+
+        # visualize the image and mask
+        plt.figure(figsize=(10, 5))
+        plt.subplot(1, 2, 1)
+        plt.imshow(image.permute(1, 2, 0))
+        plt.title("Image")
+        plt.axis("off")
+
+        plt.subplot(1, 2, 2)
+        plt.imshow(mask.squeeze(0), cmap="tab20")
+        plt.title("Mask")
+        plt.axis("off")
+
+        plt.show()
+
+        train_dataloader, val_dataloader, test_dataloader = get_dataloaders(
+            data_path="data/processed",
+            use_processed=use_processed,
+            image_transform=None,
+            mask_transform=None,
+            batch_size=4,
+            num_workers=4,
+            split_ratio=0.8,
+        )
+
+        # analysis on the dataloader
+
+        batch = next(iter(train_dataloader))
+
+        images, masks = batch
+
+        logger.info(f"Batch images shape: {images.shape}, Batch masks shape: {masks.shape}")
+        logger.info(f"Batch images min: {images.min()}, max: {images.max()}")
+        logger.info(f"Batch masks min: {masks.min()}, max: {masks.max()}")
+        logger.info(f"Batch masks unique values: {torch.unique(masks)}")
+        logger.info(f"Batch masks dtype: {masks.dtype}")
+        logger.info(f"Batch images dtype: {images.dtype}")
+
+        # Visualize the batch images and masks
+        visualize_dataset(images, masks)
+    else:
+        train_dataloader, val_dataloader, test_dataloader = get_dataloaders(
+            data_path=data_path,
+            use_processed=use_processed,
+            image_transform=image_transform,
+            mask_transform=mask_transform,
+            batch_size=4,
+            num_workers=4,
+            split_ratio=0.8,
+        )
+
+        # analysis on the dataloader
+
+        batch = next(iter(train_dataloader))
+
+        images, masks = batch
+
+        logger.info(f"Batch images shape: {images.shape}, Batch masks shape: {masks.shape}")
+        logger.info(f"Batch images min: {images.min()}, max: {images.max()}")
+        logger.info(f"Batch masks min: {masks.min()}, max: {masks.max()}")
+        logger.info(f"Batch masks unique values: {torch.unique(masks)}")
+        logger.info(f"Batch masks dtype: {masks.dtype}")
+        logger.info(f"Batch images dtype: {images.dtype}")
+
+        # Set up the figure
+        visualize_dataset(images, masks)
 
 
 if __name__ == "__main__":
-    import cProfile
-
-    download_dataset()
-    # save output to a file
-    cProfile.run("main()", sort="cumtime", filename="output_sorted.prof")
+    main(use_processed=True)
