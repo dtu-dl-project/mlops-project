@@ -405,10 +405,13 @@ def get_dataloaders(data_path, use_processed, image_transform, mask_transform, b
     train_data, val_data = random_split(train_dataset, [train_size, val_size])
 
     train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=num_workers)
+    logger.info(f"Train dataloader with {len(train_loader)} batches of dimension {batch_size}.")
     val_loader = torch.utils.data.DataLoader(val_data, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+    logger.info(f"Validation dataloader with {len(val_loader)} batches of dimension {batch_size}.")
     test_loader = torch.utils.data.DataLoader(
         test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers
     )
+    logger.info(f"Test dataloader with {len(test_loader)} batches of dimension {batch_size}.")
 
     return train_loader, val_loader, test_loader
 
