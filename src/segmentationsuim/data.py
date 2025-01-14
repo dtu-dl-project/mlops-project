@@ -11,6 +11,9 @@ from torchvision.transforms.functional import to_pil_image
 from tqdm import tqdm
 from torch.utils.data import random_split
 import time
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def download_dataset():
@@ -35,7 +38,7 @@ def download_dataset():
     folder_content = [f for f in os.listdir(data_path_raw) if f != ".gitkeep"]
 
     if not folder_content:
-        print("Dataset folder empty, downloading dataset...")
+        logger.info("Dataset folder empty, downloading dataset...")
 
         for file in files:
             file_url = f"https://drive.google.com/uc?id={file['id']}"
@@ -43,38 +46,38 @@ def download_dataset():
 
             # Download the file
             if not os.path.exists(output_path):
-                print(f"Downloading {file['name']} from {file_url}...")
+                logger.info(f"Downloading {file['name']} from {file_url}...")
                 downloaded = gdown.download(file_url, output_path, quiet=False, fuzzy=True)
 
                 # Check if the file was downloaded successfully
                 if downloaded is None:
-                    print(f"Failed to download {file['name']}. Skipping...")
+                    logger.info(f"Failed to download {file['name']}. Skipping...")
                     continue
 
-                print(
+                logger.info(
                     f"Downloaded {file['name']} to {output_path}. File size: {os.path.getsize(output_path) / (1024 * 1024):.2f} MB"
                 )
 
                 # Extract if it's a zip file
                 if output_path.endswith(".zip"):
-                    print(f"Extracting {output_path}...")
+                    logger.info(f"Extracting {output_path}...")
                     try:
                         with zipfile.ZipFile(output_path, "r") as zip_ref:
                             for file_name in zip_ref.namelist():
                                 zip_ref.extract(file_name, data_path_raw)
-                                print(f"Extracted: {file_name}")
-                        print(f"Extracted {file['name']} to {data_path_raw}.")
+                                logger.info(f"Extracted: {file_name}")
+                        logger.info(f"Extracted {file['name']} to {data_path_raw}.")
                     except zipfile.BadZipFile:
-                        print(f"Failed to extract {file['name']}. The file may be corrupted.")
+                        logger.info(f"Failed to extract {file['name']}. The file may be corrupted.")
 
                     # Delete the zip file after extraction
                     os.remove(output_path)
-                    print(f"Deleted {output_path} after extraction.")
+                    logger.info(f"Deleted {output_path} after extraction.")
             else:
-                print(f"{file['name']} already exists, skipping download.")
-        print("Dataset downloaded and extracted successfully.")
+                logger.info(f"{file['name']} already exists, skipping download.")
+        logger.info("Dataset downloaded and extracted successfully.")
     else:
-        print("The folder is not empty. Skipping download.")
+        logger.info("The folder is not empty. Skipping download.")
 
 
 def rgb_to_class(mask):
@@ -96,13 +99,13 @@ def rgb_to_class(mask):
     # Identify unique RGB colors in the mask
     unique_colors, inverse_indices = np.unique(mask_array.reshape(-1, 3), axis=0, return_inverse=True)
     end_time = time.time()
-    print(f"Time for extracting unique colors: {end_time - start_time:.4f} seconds")
+    logger.debug(f"Time for extracting unique colors: {end_time - start_time:.4f} seconds")
 
     # Create a class map using the inverse indices
     start_time = time.time()
     class_map = inverse_indices.reshape(mask_array.shape[:2])
     end_time = time.time()
-    print(f"Time for creating class map: {end_time - start_time:.4f} seconds")
+    logger.debug(f"Time for creating class map: {end_time - start_time:.4f} seconds")
 
     if (end_time - start_time) > 10:
         # Visualize the mask
@@ -178,12 +181,12 @@ class SUIMDatasetRaw(Dataset):
             mask_path = os.path.join(masks_path, f"{image_name}.bmp")
 
             if os.path.exists(mask_path):
-                print(f"Found mask for {image_name}.")
+                logger.debug(f"Found mask for {image_name}.")
                 count += 1
                 self.data.append((image_path, mask_path))
             else:
-                print(f"Mask not found for {image_name}. Skipping...")
-        print(f"Loaded {count} images and masks.")
+                logger.info(f"Mask not found for {image_name}. Skipping...")
+        logger.info(f"Loaded {count} images and masks.")
 
     def __len__(self):
         """
@@ -237,7 +240,7 @@ class SUIMDatasetRaw(Dataset):
             if isinstance(mask, torch.Tensor):
                 # Ensure mask is of type long and has a single channel
                 # visualize the mask
-                print(mask.shape)
+                logger.info(mask.shape)
             else:
                 # If still a PIL image, convert it to a tensor
                 mask = transforms.ToTensor()(mask)
@@ -246,7 +249,7 @@ class SUIMDatasetRaw(Dataset):
             mask = torch.tensor(mask, dtype=torch.int32).unsqueeze(0)
 
         # Debug shapes after applying transforms
-        print(f"After transformation - Image shape: {image.shape}, Mask shape: {mask.shape}")
+        logger.debug(f"After transformation - Image shape: {image.shape}, Mask shape: {mask.shape}")
 
         return image, mask
 
@@ -265,7 +268,7 @@ def save_processed_dataset(dataset, output_path):
     os.makedirs(images_dir, exist_ok=True)
     os.makedirs(masks_dir, exist_ok=True)
 
-    print(f"Saving processed data to {output_path}...")
+    logger.info(f"Saving processed data to {output_path}...")
 
     for idx in tqdm(range(len(dataset)), desc="Processing dataset"):
         # Load the image and mask from the dataset
@@ -285,9 +288,9 @@ def save_processed_dataset(dataset, output_path):
         image_pil.save(os.path.join(images_dir, f"{idx:05d}.png"))
         mask_pil.save(os.path.join(masks_dir, f"{idx:05d}.png"))
 
-        print(f"Processed image and mask {idx:05d} saved.")
+        logger.info(f"Processed image and mask {idx:05d} saved.")
 
-    print(f"Processed data saved to {output_path}.")
+    logger.info(f"Processed data saved to {output_path}.")
 
 
 class SUIMDatasetProcessed(Dataset):
@@ -338,8 +341,8 @@ class SUIMDatasetProcessed(Dataset):
             if os.path.exists(mask_path):
                 self.data.append((image_path, mask_path))
             else:
-                print(f"Mask not found for {image_name}. Skipping...")
-        print(f"Loaded {len(self.data)} images and masks.")
+                logger.info(f"Mask not found for {image_name}. Skipping...")
+        logger.info(f"Loaded {len(self.data)} images and masks.")
 
     def __len__(self):
         """
@@ -421,7 +424,7 @@ def main():
 
     # Visualize the first batch of images and masks
     images, masks = next(iter(train_loader))
-    print(f"Images shape: {images.shape}, Masks shape: {masks.shape}")
+    logger.info(f"Images shape: {images.shape}, Masks shape: {masks.shape}")
 
     fig, axes = plt.subplots(4, 2, figsize=(12, 24))
     for i in range(4):
