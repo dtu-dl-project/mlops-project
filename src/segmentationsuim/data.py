@@ -379,7 +379,7 @@ class SUIMDatasetProcessed(Dataset):
 def get_dataloaders(data_path, use_processed, image_transform, mask_transform, batch_size, num_workers, split_ratio):
 
     train_path = os.path.join(data_path, "train_val")
-    test_path = os.path.join(data_path, "test")
+    test_path = os.path.join(data_path, "TEST")
 
     if use_processed:
         train_dataset = SUIMDatasetProcessed(train_path)
@@ -407,9 +407,6 @@ def get_dataloaders(data_path, use_processed, image_transform, mask_transform, b
 def main():
     # Define the dataset path
     data_path = "data/raw"
-
-    train_val_path = os.path.join(data_path, "train_val")
-    test_path = os.path.join(data_path, "test")
 
     image_transform = transforms.Compose([
         transforms.Resize((572, 572)),
