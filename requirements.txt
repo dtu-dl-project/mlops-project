@@ -7,3 +7,4 @@ requests==2.32.3
 numpy==2.2.1
 torchvision==0.20.1
 matplotlib == 3.10.0
+lightning==2.5.0.post0
