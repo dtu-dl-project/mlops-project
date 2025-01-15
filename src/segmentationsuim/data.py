@@ -9,8 +9,8 @@ import torch
 from torchvision.transforms.functional import to_pil_image
 from tqdm import tqdm
 from torch.utils.data import random_split
-import time
 import logging
+from matplotlib.colors import ListedColormap
 
 logger = logging.getLogger(__name__)
 
@@ -74,37 +74,37 @@ def download_dataset():
         logger.info("The folder is not empty. Skipping download.")
 
 
-def rgb_to_class(mask):
+def grayscale_to_class(mask):
     """
-    Converts an RGB mask image into a class map where each unique RGB color in the image
-    corresponds to a unique class ID.
+    Converts a grayscale mask image into a class map using a predefined grayscale-to-class mapping.
 
     :param mask: PIL.Image
-        An RGB mask image where each unique color represents a distinct class.
-        Expected shape: (H, W, 3).
+        A grayscale mask image where each unique intensity value represents a distinct class.
     :return: np.ndarray
-        A 2D array (H, W) of integer class IDs where each ID corresponds to a specific RGB color.
+        A 2D array (H, W) of integer class IDs where each ID corresponds to a specific category.
     """
+    # Define grayscale-to-class mapping
+    grayscale_to_class = {
+        0: 0,  # BW: Background/waterbody
+        29: 1,  # HD: Human divers
+        76: 2,  # PF: Aquatic plants and sea-grass
+        105: 3,  # WR: Wrecks/ruins
+        150: 4,  # RO: Robots/instruments
+        179: 5,  # RI: Reefs/invertebrates
+        226: 6,  # FV: Fish and vertebrates
+        255: 7,  # SR: Sea-floor/rocks
+    }
+
+    # Convert the mapping into a NumPy array for vectorized lookup
+    lut = np.zeros(256, dtype=np.uint8)  # LUT for all possible grayscale values
+    for grayscale_value, class_id in grayscale_to_class.items():
+        lut[grayscale_value] = class_id
+
     # Convert the PIL Image to a NumPy array
     mask_array = np.array(mask)
 
-    # Start timing for unique color extraction
-    start_time = time.time()
-    # Identify unique RGB colors in the mask
-    unique_colors, inverse_indices = np.unique(mask_array.reshape(-1, 3), axis=0, return_inverse=True)
-    end_time = time.time()
-    logger.debug(f"Time for extracting unique colors: {end_time - start_time:.4f} seconds")
-
-    # Create a class map using the inverse indices
-    start_time = time.time()
-    class_map = inverse_indices.reshape(mask_array.shape[:2])
-    end_time = time.time()
-    logger.debug(f"Time for creating class map: {end_time - start_time:.4f} seconds")
-
-    if (end_time - start_time) > 10:
-        # Visualize the mask
-        plt.imshow(class_map)
-        plt.show()
+    # Use the LUT to map grayscale values to class IDs
+    class_map = lut[mask_array]
 
     return class_map
 
@@ -129,6 +129,8 @@ class SUIMDatasetRaw(Dataset):
         Transformation to be applied to the masks (e.g., resizing, etc.).
     data : list of tuples
         A list of tuples where each tuple contains the paths of an image and its corresponding mask.
+    unique_classes : set
+        A set of all unique class values found in the masks.
 
     Methods:
     -------
@@ -182,7 +184,7 @@ class SUIMDatasetRaw(Dataset):
                 self.data.append((image_path, mask_path))
             else:
                 logger.info(f"Mask not found for {image_name}. Skipping...")
-        logger.info(f"Dataset loaded with  {counter} images and masks.")
+        logger.info(f"Dataset loaded with {counter} images and masks.")
 
     def __len__(self):
         """
@@ -217,10 +219,10 @@ class SUIMDatasetRaw(Dataset):
 
         # Load the image and mask as PIL images
         image = Image.open(image_path).convert("RGB")
-        mask = Image.open(mask_path)
+        mask = Image.open(mask_path).convert("L")
 
         # Convert the mask from RGB to a class map
-        mask = rgb_to_class(mask)
+        mask = grayscale_to_class(mask)
         logger.debug(f"Converted mask to class map with shape {mask.shape} and unique values: {np.unique(mask)}")
 
         # Apply transformations to the image
@@ -402,11 +404,21 @@ def get_dataloaders(data_path, use_processed, image_transform, mask_transform, b
     if use_processed:
         logger.info("Using processed dataset...")
         train_dataset = SUIMDatasetProcessed(train_path)
+        unique_classes = set()
+        for idx in range(len(train_dataset)):
+            image, mask = train_dataset[idx]
+            unique_classes.update(torch.unique(mask).tolist())
+        print(f"Unique classes found in the dataset: {unique_classes}")
         test_dataset = SUIMDatasetProcessed(test_path)
     else:
         logger.info("Using raw dataset...")
         logger.info("Processing the dataset...")
         train_dataset = SUIMDatasetRaw(train_path, image_transform, mask_transform)
+        unique_classes = set()
+        for idx in range(len(train_dataset)):
+            image, mask = train_dataset[idx]
+            unique_classes.update(torch.unique(mask).tolist())
+        print(f"Unique classes found in the dataset: {unique_classes}")
         test_dataset = SUIMDatasetRaw(test_path, image_transform, mask_transform)
 
     train_size = int(split_ratio * len(train_dataset))
@@ -436,13 +448,28 @@ def visualize_dataset(images, masks, batch_size=4):
     :param batch_size: int
         Number of images/masks to visualize.
     """
+
+    class_colors = [
+        (0, 0, 0),  # Class 0: Black (BW - Background/waterbody)
+        (0, 0, 255),  # Class 1: Blue (HD - Human divers)
+        (0, 255, 0),  # Class 2: Green (PF - Aquatic plants and sea-grass)
+        (135, 206, 235),  # Class 3: Sky blue (WR - Wrecks/ruins)
+        (255, 0, 0),  # Class 4: Red (RO - Robots/instruments)
+        (255, 192, 203),  # Class 5: Pink (RI - Reefs/invertebrates)
+        (255, 255, 0),  # Class 6: Yellow (FV - Fish and vertebrates)
+        (255, 255, 255),  # Class 7: White (SR - Sea-floor/rocks)
+    ]
+    class_colors = np.array(class_colors) / 255.0  # Normalize to [0, 1]
+
+    # Create a colormap
+    fixed_cmap = ListedColormap(class_colors)
     fig, axes = plt.subplots(batch_size, 2, figsize=(8, batch_size * 2))
     for i in range(batch_size):
         axes[i, 0].imshow(images[i].permute(1, 2, 0))
         axes[i, 0].set_title(f"Image {i + 1}")
         axes[i, 0].axis("off")
 
-        axes[i, 1].imshow(masks[i], cmap="tab20")
+        axes[i, 1].imshow(masks[i], cmap=fixed_cmap, vmin=0, vmax=len(class_colors) - 1)
         axes[i, 1].set_title(f"Mask {i + 1}")
         axes[i, 1].axis("off")
     plt.tight_layout()
@@ -492,26 +519,12 @@ def main(use_processed=False):
         logger.info(f"Mask dtype: {mask.dtype}")
         logger.info(f"Image dtype: {image.dtype}")
 
-        # visualize the image and mask
-        plt.figure(figsize=(10, 5))
-        plt.subplot(1, 2, 1)
-        plt.imshow(image.permute(1, 2, 0))
-        plt.title("Image")
-        plt.axis("off")
-
-        plt.subplot(1, 2, 2)
-        plt.imshow(mask, cmap="tab20")
-        plt.title("Mask")
-        plt.axis("off")
-
-        plt.show()
-
         train_dataloader, val_dataloader, test_dataloader = get_dataloaders(
             data_path="data/processed",
             use_processed=use_processed,
             image_transform=None,
             mask_transform=None,
-            batch_size=4,
+            batch_size=8,
             num_workers=4,
             split_ratio=0.8,
         )
@@ -530,14 +543,14 @@ def main(use_processed=False):
         logger.info(f"Batch images dtype: {images.dtype}")
 
         # Visualize the batch images and masks
-        visualize_dataset(images, masks)
+        visualize_dataset(images, masks, 8)
     else:
         train_dataloader, val_dataloader, test_dataloader = get_dataloaders(
             data_path=data_path,
             use_processed=use_processed,
             image_transform=image_transform,
             mask_transform=mask_transform,
-            batch_size=4,
+            batch_size=8,
             num_workers=4,
             split_ratio=0.8,
         )
@@ -556,8 +569,8 @@ def main(use_processed=False):
         logger.info(f"Batch images dtype: {images.dtype}")
 
         # Set up the figure
-        visualize_dataset(images, masks)
+        visualize_dataset(images, masks, batch_size=8)
 
 
 if __name__ == "__main__":
-    main(use_processed=False)
+    main(use_processed=True)
