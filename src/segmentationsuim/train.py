@@ -7,6 +7,9 @@ import lightning as L
 import torch.nn.functional as F
 import torch as T
 from PIL import Image
+
+from transformers import AutoImageProcessor, SegformerForSemanticSegmentation
+
 import logging
 
 import hydra
@@ -47,6 +50,46 @@ class UNetModule(L.LightningModule):
     def configure_optimizers(self):
         return T.optim.Adam(self.parameters(), lr=self.lr)
 
+class Trans(L.LightningModule):
+    def __init__(self, lr):
+        super().__init__()
+        self.model_name = "nvidia/segformer-b0-finetuned-ade-512-512"
+        self.processor = AutoImageProcessor.from_pretrained(self.model_name)
+        self.model = SegformerForSemanticSegmentation.from_pretrained(self.model_name)
+        self.lr = lr
+
+    def step(self, batch, batch_idx):
+        x, y = batch
+        
+        # Model output
+        inputs = self.processor(images=x, return_tensors="pt").pixel_values
+        y_hat = self.model(inputs)
+        logits = y_hat.logits
+
+        # Ground truth
+        y = y.squeeze(1)
+        resized_labels = F.interpolate(y.unsqueeze(1).float(), size=logits.shape[-2:], mode="nearest").squeeze(1).long()
+        
+        # Loss
+        loss = F.cross_entropy(logits, resized_labels)
+        return loss
+
+    def training_step(self, batch, batch_idx):
+        loss = self.step(batch, batch_idx)
+
+        self.log("train_loss", loss, on_step=True, on_epoch=False, prog_bar=True, logger=True)
+
+        return loss
+
+    def validation_step(self, batch, batch_idx):
+        loss = self.step(batch, batch_idx)
+
+        self.log("val_loss", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+
+        return loss
+
+    def configure_optimizers(self):
+        return T.optim.Adam(self.parameters(), lr=self.lr)
 
 @hydra.main(version_base=None, config_path="../../", config_name="config")
 def main(cfg: DictConfig) -> None:
@@ -70,6 +113,7 @@ def main(cfg: DictConfig) -> None:
         split_ratio=cfg.data_loader.split_ratio,
     )
 
+    #model = Trans(lr=cfg.training.optimizer.lr)
     model = UNetModule(unet, lr=cfg.training.optimizer.lr)
     trainer = L.Trainer(max_epochs=cfg.training.max_epochs)
     trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=val_loader)
