@@ -7,10 +7,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from torchvision.transforms.functional import to_pil_image
-from tqdm import tqdm
 from torch.utils.data import random_split
 import logging
 from matplotlib.colors import ListedColormap
+from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
 
@@ -408,7 +408,7 @@ def get_dataloaders(data_path, use_processed, image_transform, mask_transform, b
         for idx in range(len(train_dataset)):
             image, mask = train_dataset[idx]
             unique_classes.update(torch.unique(mask).tolist())
-        print(f"Unique classes found in the dataset: {unique_classes}")
+        logger.debug(f"Unique classes found in the dataset: {unique_classes}")
         test_dataset = SUIMDatasetProcessed(test_path)
     else:
         logger.info("Using raw dataset...")
@@ -418,7 +418,7 @@ def get_dataloaders(data_path, use_processed, image_transform, mask_transform, b
         for idx in range(len(train_dataset)):
             image, mask = train_dataset[idx]
             unique_classes.update(torch.unique(mask).tolist())
-        print(f"Unique classes found in the dataset: {unique_classes}")
+        logger.debug(f"Unique classes found in the dataset: {unique_classes}")
         test_dataset = SUIMDatasetRaw(test_path, image_transform, mask_transform)
 
     train_size = int(split_ratio * len(train_dataset))
@@ -531,19 +531,31 @@ def main(use_processed=False):
 
         # analysis on the dataloader
 
-        batch = next(iter(train_dataloader))
+        for idx, (images, masks) in tqdm(
+            enumerate(train_dataloader), total=len(train_dataloader), desc="Data Loading Training Progress"
+        ):
+            logger.debug(f"Batch {idx + 1}:")
 
-        images, masks = batch
+            if idx == 10:
+                logger.info(f"Batch images shape: {images.shape}, Batch masks shape: {masks.shape}")
+                logger.info(f"Batch images min: {images.min()}, max: {images.max()}")
+                logger.info(f"Batch masks min: {masks.min()}, max: {masks.max()}")
+                logger.info(f"Batch masks unique values: {torch.unique(masks)}")
+                logger.info(f"Batch masks dtype: {masks.dtype}")
+                logger.info(f"Batch images dtype: {images.dtype}")
 
-        logger.info(f"Batch images shape: {images.shape}, Batch masks shape: {masks.shape}")
-        logger.info(f"Batch images min: {images.min()}, max: {images.max()}")
-        logger.info(f"Batch masks min: {masks.min()}, max: {masks.max()}")
-        logger.info(f"Batch masks unique values: {torch.unique(masks)}")
-        logger.info(f"Batch masks dtype: {masks.dtype}")
-        logger.info(f"Batch images dtype: {images.dtype}")
+                visualize_dataset(images, masks, batch_size=8)
 
-        # Visualize the batch images and masks
-        visualize_dataset(images, masks, 8)
+        for idx, (images, masks) in tqdm(
+            enumerate(val_dataloader), total=len(val_dataloader), desc="Data Loading Validation Progress"
+        ):
+            logger.debug(f"Batch {idx + 1}:")
+
+        for idx, (images, masks) in tqdm(
+            enumerate(test_dataloader), total=len(test_dataloader), desc="Data Loading Test Progress"
+        ):
+            logger.debug(f"Batch {idx + 1}:")
+
     else:
         train_dataloader, val_dataloader, test_dataloader = get_dataloaders(
             data_path=data_path,
@@ -557,20 +569,31 @@ def main(use_processed=False):
 
         # analysis on the dataloader
 
-        batch = next(iter(train_dataloader))
+        for idx, (images, masks) in tqdm(
+            enumerate(train_dataloader), total=len(train_dataloader), desc="Data Loading Training Progress"
+        ):
+            logger.debug(f"Batch {idx + 1}:")
 
-        images, masks = batch
+            if idx == 10:
+                logger.info(f"Batch images shape: {images.shape}, Batch masks shape: {masks.shape}")
+                logger.info(f"Batch images min: {images.min()}, max: {images.max()}")
+                logger.info(f"Batch masks min: {masks.min()}, max: {masks.max()}")
+                logger.info(f"Batch masks unique values: {torch.unique(masks)}")
+                logger.info(f"Batch masks dtype: {masks.dtype}")
+                logger.info(f"Batch images dtype: {images.dtype}")
 
-        logger.info(f"Batch images shape: {images.shape}, Batch masks shape: {masks.shape}")
-        logger.info(f"Batch images min: {images.min()}, max: {images.max()}")
-        logger.info(f"Batch masks min: {masks.min()}, max: {masks.max()}")
-        logger.info(f"Batch masks unique values: {torch.unique(masks)}")
-        logger.info(f"Batch masks dtype: {masks.dtype}")
-        logger.info(f"Batch images dtype: {images.dtype}")
+                visualize_dataset(images, masks, batch_size=8)
 
-        # Set up the figure
-        visualize_dataset(images, masks, batch_size=8)
+        for idx, (images, masks) in tqdm(
+            enumerate(val_dataloader), total=len(val_dataloader), desc="Data Loading Validation Progress"
+        ):
+            logger.debug(f"Batch {idx + 1}:")
+
+        for idx, (images, masks) in tqdm(
+            enumerate(test_dataloader), total=len(test_dataloader), desc="Data Loading Test Progress"
+        ):
+            logger.debug(f"Batch {idx + 1}:")
 
 
 if __name__ == "__main__":
-    main(use_processed=True)
+    main(use_processed=False)
