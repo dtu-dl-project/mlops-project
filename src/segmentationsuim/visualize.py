@@ -1,4 +1,4 @@
-from segmentationsuim.model import UNet
+from segmentationsuim.train import UNetModule, unet
 from segmentationsuim.data import download_dataset, get_dataloaders
 from omegaconf import DictConfig
 
@@ -15,16 +15,15 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.ba
 @hydra.main(version_base=None, config_path="../../", config_name="config")
 def visualize(cfg: DictConfig) -> None:
     """Visualize model predictions."""
-    model: torch.nn.Module = UNet(3, 8).to(DEVICE)
-    model.load_state_dict(torch.load(cfg.model_checkpoint_path))
+    model = UNetModule.load_from_checkpoint(cfg.checkpoints.dirpath + cfg.checkpoints.filename, unet=unet)
     model.eval()
 
     download_dataset()
     data_path = "data/raw"
 
-    image_transform = transforms.Compose([transforms.Resize((572, 572)), transforms.ToTensor()])
+    image_transform = transforms.Compose([transforms.Resize(model.image_size), transforms.ToTensor()])
 
-    mask_transform = transforms.Compose([transforms.Resize((572, 572), interpolation=Image.NEAREST)])
+    mask_transform = transforms.Compose([transforms.Resize(model.image_size, interpolation=Image.NEAREST)])
 
     _, _, test_loader = get_dataloaders(
         data_path=data_path,
@@ -42,7 +41,7 @@ def visualize(cfg: DictConfig) -> None:
     with torch.inference_mode():
         for img, target in tqdm(test_loader, desc="Evaluating"):
             img, target = img.to(DEVICE), target.to(DEVICE)
-            pred = model(img)
+            pred = model.unet(img)
             images.append(img.cpu())
             targets.append(target.cpu())
             predictions.append(pred.cpu())

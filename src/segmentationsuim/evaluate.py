@@ -1,4 +1,4 @@
-from segmentationsuim.model import UNet
+from segmentationsuim.train import UNetModule, unet
 from segmentationsuim.data import download_dataset, get_dataloaders
 from omegaconf import DictConfig
 
@@ -45,17 +45,16 @@ def evaluate(cfg: DictConfig) -> None:
     """Evaluate a trained model."""
     logger.info("Evaluating model...")
 
-    model = UNet(3, 8).to(DEVICE)
-    logger.info(f"Loading model from {cfg.model_checkpoint_path}")
-    model.load_state_dict(torch.load(cfg.model_checkpoint_path))
+    logger.info(f"Loading model from {cfg.checkpoints.dirpath + cfg.checkpoints.filename}")
+    model = UNetModule.load_from_checkpoint(cfg.checkpoints.dirpath + cfg.checkpoints.filename, unet=unet)
     logger.info("Model loaded successfully.")
 
     download_dataset()
     data_path = "data/raw"
 
-    image_transform = transforms.Compose([transforms.Resize((572, 572)), transforms.ToTensor()])
+    image_transform = transforms.Compose([transforms.Resize(model.image_size), transforms.ToTensor()])
 
-    mask_transform = transforms.Compose([transforms.Resize((572, 572), interpolation=Image.NEAREST)])
+    mask_transform = transforms.Compose([transforms.Resize(model.image_size, interpolation=Image.NEAREST)])
 
     _, _, test_loader = get_dataloaders(
         data_path=data_path,
@@ -72,7 +71,7 @@ def evaluate(cfg: DictConfig) -> None:
     for img, target in tqdm(test_loader, desc="Evaluating"):
         img, target = img.to(DEVICE), target.to(DEVICE)
         target = index_to_one_hot(target.long(), num_classes=NUM_CLASSES)
-        y_pred = model(img).long()
+        y_pred = model.unet(img).long()
         iou.update(y_pred, target)
 
     iou_score = iou.compute()

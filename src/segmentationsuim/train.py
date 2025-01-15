@@ -3,6 +3,7 @@ from segmentationsuim.model import UNet
 from segmentationsuim.data import download_dataset, get_dataloaders
 
 from torchvision import transforms
+from lightning.pytorch.callbacks import ModelCheckpoint
 import lightning as L
 import torch.nn.functional as F
 import torch as T
@@ -17,15 +18,18 @@ import hydra
 
 logger = logging.getLogger(__name__)
 
-
 unet = UNet(3, 8)  # 3 input channels, 8 output channels
+
+IMAGE_SIZE = (572, 572)
 
 
 class UNetModule(L.LightningModule):
-    def __init__(self, unet, lr):
+    def __init__(self, unet, lr, image_size: tuple[int, int]):
         super().__init__()
         self.unet = unet
         self.lr = lr
+        self.image_size = image_size
+        self.save_hyperparameters(ignore=["unet"])
 
     def step(self, batch, batch_idx):
         x, y = batch
@@ -99,9 +103,8 @@ def main(cfg: DictConfig) -> None:
     download_dataset()
     data_path = "data/raw"
 
-    image_transform = transforms.Compose([transforms.Resize((572, 572)), transforms.ToTensor()])
-
-    mask_transform = transforms.Compose([transforms.Resize((572, 572), interpolation=Image.NEAREST)])
+    image_transform = transforms.Compose([transforms.Resize(IMAGE_SIZE), transforms.ToTensor()])
+    mask_transform = transforms.Compose([transforms.Resize(IMAGE_SIZE, interpolation=Image.NEAREST)])
 
     train_loader, val_loader, test_loader = get_dataloaders(
         data_path=data_path,
@@ -113,12 +116,14 @@ def main(cfg: DictConfig) -> None:
         split_ratio=cfg.data_loader.split_ratio,
     )
 
-    #model = Trans(lr=cfg.training.optimizer.lr)
-    model = UNetModule(unet, lr=cfg.training.optimizer.lr)
-    trainer = L.Trainer(max_epochs=cfg.training.max_epochs)
-    trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=val_loader)
+    model = UNetModule(unet, lr=cfg.training.optimizer.lr, image_size=IMAGE_SIZE)
 
-    T.save(model.unet.state_dict(), cfg.model_checkpoint_path)
+    checkpoint_callback = ModelCheckpoint(
+        dirpath=cfg.checkpoints.dirpath, save_top_k=3, monitor="val_loss", filename="{{epoch}}-{{val_loss:.5f}}"
+    )
+
+    trainer = L.Trainer(max_epochs=cfg.training.max_epochs, callbacks=[checkpoint_callback])
+    trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=val_loader)
 
 
 if __name__ == "__main__":
