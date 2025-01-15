@@ -5,3 +5,5 @@ data_loader:
 training:
   optimizer:
     lr: 1e-3
+  max_epochs: 1
+model_checkpoint_path: "models/model.pth"
