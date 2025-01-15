@@ -54,6 +54,7 @@ class UNetModule(L.LightningModule):
     def configure_optimizers(self):
         return T.optim.Adam(self.parameters(), lr=self.lr)
 
+
 class Trans(L.LightningModule):
     def __init__(self, lr):
         super().__init__()
@@ -64,7 +65,7 @@ class Trans(L.LightningModule):
 
     def step(self, batch, batch_idx):
         x, y = batch
-        
+
         # Model output
         inputs = self.processor(images=x, return_tensors="pt").pixel_values
         y_hat = self.model(inputs)
@@ -73,7 +74,7 @@ class Trans(L.LightningModule):
         # Ground truth
         y = y.squeeze(1)
         resized_labels = F.interpolate(y.unsqueeze(1).float(), size=logits.shape[-2:], mode="nearest").squeeze(1).long()
-        
+
         # Loss
         loss = F.cross_entropy(logits, resized_labels)
         return loss
@@ -94,6 +95,7 @@ class Trans(L.LightningModule):
 
     def configure_optimizers(self):
         return T.optim.Adam(self.parameters(), lr=self.lr)
+
 
 @hydra.main(version_base=None, config_path="../../", config_name="config")
 def main(cfg: DictConfig) -> None:
@@ -116,6 +118,7 @@ def main(cfg: DictConfig) -> None:
         split_ratio=cfg.data_loader.split_ratio,
     )
 
+    # model = Trans(lr=cfg.training.optimizer.lr)
     model = UNetModule(unet, lr=cfg.training.optimizer.lr, image_size=IMAGE_SIZE)
 
     checkpoint_callback = ModelCheckpoint(
