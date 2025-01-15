@@ -27,8 +27,7 @@ class UNetModule(L.LightningModule):
     def step(self, batch, batch_idx):
         x, y = batch
         y_hat = self.unet(x)
-        y = y.squeeze(1)
-        loss = F.cross_entropy(y_hat, y)
+        loss = F.cross_entropy(y_hat, y.long())
         return loss
 
     def training_step(self, batch, batch_idx):
@@ -59,9 +58,7 @@ def main(cfg: DictConfig) -> None:
 
     image_transform = transforms.Compose([transforms.Resize((572, 572)), transforms.ToTensor()])
 
-    mask_transform = transforms.Compose(
-        [transforms.Resize((572, 572), interpolation=Image.NEAREST), transforms.ToTensor()]
-    )
+    mask_transform = transforms.Compose([transforms.Resize((572, 572), interpolation=Image.NEAREST)])
 
     train_loader, val_loader, test_loader = get_dataloaders(
         data_path=data_path,
@@ -74,8 +71,10 @@ def main(cfg: DictConfig) -> None:
     )
 
     model = UNetModule(unet, lr=cfg.training.optimizer.lr)
-    trainer = L.Trainer()
+    trainer = L.Trainer(max_epochs=cfg.training.max_epochs)
     trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=val_loader)
+
+    T.save(model.unet.state_dict(), cfg.model_checkpoint_path)
 
 
 if __name__ == "__main__":
