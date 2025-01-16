@@ -58,9 +58,13 @@ class UNetModule(L.LightningModule):
 class Trans(L.LightningModule):
     def __init__(self, lr):
         super().__init__()
+        output_classes = 8
+
         self.model_name = "nvidia/segformer-b0-finetuned-ade-512-512"
         self.processor = AutoImageProcessor.from_pretrained(self.model_name)
-        self.model = SegformerForSemanticSegmentation.from_pretrained(self.model_name)
+        self.model = SegformerForSemanticSegmentation.from_pretrained(
+            self.model_name, num_labels=output_classes, ignore_mismatched_sizes=True
+        )  # Ignore original head
         self.lr = lr
 
     def step(self, batch, batch_idx):
