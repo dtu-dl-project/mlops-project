@@ -79,20 +79,24 @@ class Trans(L.LightningModule):
         self.val_mean_iou = MeanIoU(num_classes=output_classes)
 
     def step(self, batch, batch_idx):
-        x, y = batch
+        x, y = batch  # x shape: Batch x 3 x Width x Height
+        # y shape: Batch x Width x Height
 
         # Model output
         inputs = self.processor(images=x, return_tensors="pt").pixel_values
         y_hat = self.model(inputs)
         logits = y_hat.logits
+        logits_resized = F.interpolate(
+            logits, size=y.shape[-2:], mode="bilinear", align_corners=False
+        )  # Batch x Classes x Width x Height
 
         # Ground truth
-        y = y.squeeze(1)
-        resized_labels = F.interpolate(y.unsqueeze(1).float(), size=logits.shape[-2:], mode="nearest").squeeze(1).long()
+        y = y.squeeze(1)  # Batch x Widht x Height
+        breakpoint()
 
         # Loss
-        loss = F.cross_entropy(logits, resized_labels)
-        return loss, logits, resized_labels
+        loss = F.cross_entropy(logits_resized, y)
+        return loss, logits_resized, y
 
     def training_step(self, batch, batch_idx):
         loss, _, _ = self.step(batch, batch_idx)
@@ -164,8 +168,8 @@ def main(cfg: DictConfig) -> None:
         split_ratio=cfg.data_loader.split_ratio,
     )
 
-    # model = Trans(lr=cfg.training.optimizer.lr)
-    model = UNetModule(unet, lr=cfg.training.optimizer.lr, image_size=IMAGE_SIZE)
+    model = Trans(lr=cfg.training.optimizer.lr)
+    # model = UNetModule(unet, lr=cfg.training.optimizer.lr, image_size=IMAGE_SIZE)
 
     checkpoint_callback = ModelCheckpoint(
         dirpath=cfg.checkpoints.dirpath, save_top_k=3, monitor="val_loss", filename="{epoch}-{val_loss:.5f}"
