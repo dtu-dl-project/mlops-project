@@ -1,3 +1,4 @@
+from lightning.pytorch.loggers import WandbLogger
 from omegaconf import DictConfig, OmegaConf
 from segmentationsuim.model import UNet
 from segmentationsuim.data import download_dataset, get_dataloaders
@@ -22,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 unet = UNet(3, 8)  # 3 input channels, 8 output channels
 
-IMAGE_SIZE = (572, 572)
+IMAGE_SIZE = (32, 32)
 
 DEVICE = T.device("cuda" if T.cuda.is_available() else "mps" if T.backends.mps.is_available() else "cpu")
 
@@ -182,8 +183,30 @@ def main(cfg: DictConfig) -> None:
         filename="{epoch}-{val_loss:.5f}-{val_mean_iou:.5f}",
     )
 
-    trainer = L.Trainer(max_epochs=cfg.training.max_epochs, callbacks=[checkpoint_callback])
+    wandb_logger = WandbLogger(log_model="all")
+
+    trainer = L.Trainer(
+        max_epochs=cfg.training.max_epochs,
+        callbacks=[checkpoint_callback],
+        limit_train_batches=cfg.training.limits_batches.train,
+        limit_val_batches=cfg.training.limits_batches.val,
+        logger=wandb_logger,
+    )
     trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=val_loader)
+
+    if wandb_enabled:
+        # Save artifacts if wandb is enabled
+        best_model_path = checkpoint_callback.best_model_path
+        if best_model_path:
+            artifact = wandb.Artifact(
+                name="best_model",  # Artifact name
+                type="model",  # Artifact type
+                description="Trained UNet model",  # Artifact description
+                metadata=dict(cfg_dict),  # Optional metadata (e.g., training configuration)
+            )
+            artifact.add_file(best_model_path)  # Add the model file
+            wandb.log_artifact(artifact)  # Log the artifact
+            logger.info(f"Logged model artifact: {best_model_path}")
 
 
 if __name__ == "__main__":

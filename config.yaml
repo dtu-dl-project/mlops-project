@@ -5,6 +5,9 @@ data_loader:
 training:
   optimizer:
     lr: 1e-3
-  max_epochs: 1
+  max_epochs: 2
+  limits_batches:
+    train: 1.0
+    val: 1.0
 checkpoints:
   dirpath: "models/"
