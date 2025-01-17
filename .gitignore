@@ -181,3 +181,5 @@ data/
 uv.lock
 lightning_logs/
 .env
+wandb/
+outputs/
