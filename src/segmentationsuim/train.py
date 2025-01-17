@@ -12,12 +12,11 @@ from PIL import Image
 from transformers import AutoImageProcessor, SegformerForSemanticSegmentation
 
 import logging
-
 import hydra
 import wandb
 import os
 from dotenv import load_dotenv
-
+from torchmetrics.segmentation import MeanIoU
 
 logger = logging.getLogger(__name__)
 
@@ -33,27 +32,33 @@ class UNetModule(L.LightningModule):
         self.lr = lr
         self.image_size = image_size
         self.save_hyperparameters(ignore=["unet"])
+        self.val_mean_iou = MeanIoU(num_classes=8)
 
     def step(self, batch, batch_idx):
         x, y = batch
         y_hat = self.unet(x)
         loss = F.cross_entropy(y_hat, y.long())
-        return loss
+        return loss, y_hat, y
 
     def training_step(self, batch, batch_idx):
-        loss = self.step(batch, batch_idx)
+        loss, _, _ = self.step(batch, batch_idx)
 
         self.log("train_loss", loss, on_step=True, on_epoch=False, prog_bar=True, logger=True)
-        wandb.log({"train_loss": loss})
+        wandb.log({"train_loss": loss.item()})
 
         return loss
 
     def validation_step(self, batch, batch_idx):
-        loss = self.step(batch, batch_idx)
+        loss, y_hat, y = self.step(batch, batch_idx)
+        preds = T.argmax(y_hat, dim=1)
+        self.val_mean_iou.update(preds, y)
+        mean_iou = self.val_mean_iou.compute()
 
         self.log("val_loss", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
-        wandb.log({"val_loss": loss})
+        self.log("val_mean_iou", mean_iou, on_epoch=True, prog_bar=True, logger=True)
+        wandb.log({"val_loss": loss.item(), "val_mean_iou": mean_iou.item()})
 
+        self.val_mean_iou.reset()
         return loss
 
     def configure_optimizers(self):
@@ -71,6 +76,7 @@ class Trans(L.LightningModule):
             self.model_name, num_labels=output_classes, ignore_mismatched_sizes=True
         )  # Ignore original head
         self.lr = lr
+        self.val_mean_iou = MeanIoU(num_classes=output_classes)
 
     def step(self, batch, batch_idx):
         x, y = batch
@@ -86,22 +92,27 @@ class Trans(L.LightningModule):
 
         # Loss
         loss = F.cross_entropy(logits, resized_labels)
-        return loss
+        return loss, logits, resized_labels
 
     def training_step(self, batch, batch_idx):
-        loss = self.step(batch, batch_idx)
+        loss, _, _ = self.step(batch, batch_idx)
 
         self.log("train_loss", loss, on_step=True, on_epoch=False, prog_bar=True, logger=True)
-        wandb.log({"train_loss": loss})
+        wandb.log({"train_loss": loss.item()})
 
         return loss
 
     def validation_step(self, batch, batch_idx):
-        loss = self.step(batch, batch_idx)
+        loss, logits, resized_labels = self.step(batch, batch_idx)
+        preds = T.argmax(logits, dim=1)
+        self.val_mean_iou.update(preds, resized_labels)
+        mean_iou = self.val_mean_iou.compute()
 
         self.log("val_loss", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
-        wandb.log({"val_loss": loss})
+        self.log("val_mean_iou", mean_iou, on_epoch=True, prog_bar=True, logger=True)
+        wandb.log({"val_loss": loss.item(), "val_mean_iou": mean_iou.item()})
 
+        self.val_mean_iou.reset()
         return loss
 
     def configure_optimizers(self):
