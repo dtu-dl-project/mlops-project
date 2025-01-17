@@ -12,11 +12,11 @@ class ConvBlock(nn.Module):
     def __init__(self, in_channels: int, out_channels: int, dropout: float = 0.0):
         super(ConvBlock, self).__init__()
         self.double_conv = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
+            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=0),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True),
             nn.Dropout2d(p=dropout),  # Add dropout after the first activation
-            nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1),
+            nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=0),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True),
             nn.Dropout2d(p=dropout),  # Add dropout after the second activation
@@ -72,13 +72,24 @@ class Upscaling(nn.Module):
         :return: Output tensor of shape (B, C_out, H, W).
         """
         x = self.upsample(x)
+        print(f"Upscaling Output Shape: {x.shape}")
         x_height, x_width = x.size()[2], x.size()[3]
         skip_height, skip_width = skip.size()[2], skip.size()[3]
         diffY = skip_height - x_height
         diffX = skip_width - x_width
-        x = F.pad(
-            x, [diffX // 2, diffX - diffX // 2, diffY // 2, diffY - diffY // 2]
-        )  # padding to match the dimensions of the skip connection
+        print(f"Skip Shape: {skip.shape}")
+        print(f"DiffY: {diffY}, DiffX: {diffX}")
+        # Adjust the skip connection dimensions to match x
+        if diffY > 0 or diffX > 0:
+            # Crop the skip connection if it's larger than x
+            skip = skip[
+                :, :, diffY // 2 : skip_height - (diffY - diffY // 2), diffX // 2 : skip_width - (diffX - diffX // 2)
+            ]
+        elif diffY < 0 or diffX < 0:
+            # Pad the skip connection if it's smaller than x
+            skip = F.pad(skip, [-diffX // 2, -diffX + (-diffX // 2), -diffY // 2, -diffY + (-diffY // 2)])
+
+        print(f"Adjusted Skip Shape: {skip.shape}")
         x = torch.cat([x, skip], dim=1)
         return self.conv_block(x)
 
