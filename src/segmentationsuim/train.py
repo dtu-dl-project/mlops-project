@@ -40,6 +40,8 @@ class UNetModule(L.LightningModule):
     def step(self, batch, batch_idx):
         x, y = batch
         y_hat = self.unet(x)
+        mask_transform = transforms.Compose([transforms.Resize(IMAGE_SIZE, interpolation=Image.NEAREST)])
+        y_hat = mask_transform(y_hat)
         loss = F.cross_entropy(y_hat, y.long())
         return loss, y_hat, y
 
