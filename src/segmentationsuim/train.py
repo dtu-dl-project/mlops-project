@@ -1,6 +1,7 @@
 from omegaconf import DictConfig, OmegaConf
 from segmentationsuim.model import UNet
 from segmentationsuim.data import download_dataset, get_dataloaders
+from segmentationsuim.utils import index_to_one_hot
 
 from torchvision import transforms
 from lightning.pytorch.callbacks import ModelCheckpoint
@@ -23,6 +24,8 @@ logger = logging.getLogger(__name__)
 unet = UNet(3, 8)  # 3 input channels, 8 output channels
 
 IMAGE_SIZE = (572, 572)
+
+DEVICE = T.device("cuda" if T.cuda.is_available() else "mps" if T.backends.mps.is_available() else "cpu")
 
 
 class UNetModule(L.LightningModule):
@@ -51,7 +54,8 @@ class UNetModule(L.LightningModule):
     def validation_step(self, batch, batch_idx):
         loss, y_hat, y = self.step(batch, batch_idx)
         preds = T.argmax(y_hat, dim=1)
-        self.val_mean_iou.update(preds, y)
+        one_hot_y = index_to_one_hot(y, num_classes=8)
+        self.val_mean_iou.update(preds, one_hot_y)
         mean_iou = self.val_mean_iou.compute()
 
         self.log("val_loss", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
@@ -83,7 +87,7 @@ class Trans(L.LightningModule):
         # y shape: Batch x Width x Height
 
         # Model output
-        inputs = self.processor(images=x, return_tensors="pt").pixel_values
+        inputs = self.processor(images=x, return_tensors="pt").pixel_values.to(DEVICE)
         y_hat = self.model(inputs)
         logits = y_hat.logits
         logits_resized = F.interpolate(
@@ -91,8 +95,7 @@ class Trans(L.LightningModule):
         )  # Batch x Classes x Width x Height
 
         # Ground truth
-        y = y.squeeze(1)  # Batch x Widht x Height
-        breakpoint()
+        y = y.squeeze(1).long()  # Batch x Widht x Height
 
         # Loss
         loss = F.cross_entropy(logits_resized, y)
@@ -168,11 +171,14 @@ def main(cfg: DictConfig) -> None:
         split_ratio=cfg.data_loader.split_ratio,
     )
 
-    model = Trans(lr=cfg.training.optimizer.lr)
-    # model = UNetModule(unet, lr=cfg.training.optimizer.lr, image_size=IMAGE_SIZE)
+    # model = Trans(lr=cfg.training.optimizer.lr)
+    model = UNetModule(unet, lr=cfg.training.optimizer.lr, image_size=IMAGE_SIZE)
 
     checkpoint_callback = ModelCheckpoint(
-        dirpath=cfg.checkpoints.dirpath, save_top_k=3, monitor="val_loss", filename="{epoch}-{val_loss:.5f}"
+        dirpath=cfg.checkpoints.dirpath,
+        save_top_k=3,
+        monitor="val_mean_iou",
+        filename="{epoch}-{val_loss:.5f}-{val_mean_iou:.5f}",
     )
 
     trainer = L.Trainer(max_epochs=cfg.training.max_epochs, callbacks=[checkpoint_callback])

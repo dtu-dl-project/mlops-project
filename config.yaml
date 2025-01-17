@@ -7,4 +7,4 @@ training:
     lr: 1e-3
   max_epochs: 1
 checkpoints:
-  dirpath: "models/model.pth"
+  dirpath: "models/"
