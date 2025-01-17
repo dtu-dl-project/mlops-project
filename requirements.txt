@@ -10,3 +10,5 @@ matplotlib == 3.10.0
 lightning==2.5.0.post0
 hydra-core==1.3.2
 transformers==4.48.0
+wandb==0.19.4
+python-dotenv==1.0.1

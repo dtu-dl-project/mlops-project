@@ -1,5 +1,5 @@
 data_loader:
-  batch_size: 4
+  batch_size: 1
   workers: 4
   split_ratio: 0.8
 training:

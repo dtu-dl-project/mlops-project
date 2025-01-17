@@ -1,4 +1,4 @@
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 from segmentationsuim.model import UNet
 from segmentationsuim.data import download_dataset, get_dataloaders
 
@@ -14,6 +14,9 @@ from transformers import AutoImageProcessor, SegformerForSemanticSegmentation
 import logging
 
 import hydra
+import wandb
+import os
+from dotenv import load_dotenv
 
 
 logger = logging.getLogger(__name__)
@@ -41,6 +44,7 @@ class UNetModule(L.LightningModule):
         loss = self.step(batch, batch_idx)
 
         self.log("train_loss", loss, on_step=True, on_epoch=False, prog_bar=True, logger=True)
+        wandb.log({"train_loss": loss})
 
         return loss
 
@@ -48,6 +52,7 @@ class UNetModule(L.LightningModule):
         loss = self.step(batch, batch_idx)
 
         self.log("val_loss", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+        wandb.log({"val_loss": loss})
 
         return loss
 
@@ -87,6 +92,7 @@ class Trans(L.LightningModule):
         loss = self.step(batch, batch_idx)
 
         self.log("train_loss", loss, on_step=True, on_epoch=False, prog_bar=True, logger=True)
+        wandb.log({"train_loss": loss})
 
         return loss
 
@@ -94,6 +100,7 @@ class Trans(L.LightningModule):
         loss = self.step(batch, batch_idx)
 
         self.log("val_loss", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+        wandb.log({"val_loss": loss})
 
         return loss
 
@@ -105,6 +112,30 @@ class Trans(L.LightningModule):
 def main(cfg: DictConfig) -> None:
     logger.info(f"Configuration: {cfg}")
     logging.basicConfig(level=logging.INFO)
+
+    wandb_api_key = os.getenv("WANDB_API_KEY")
+
+    # Convert cfg to dict
+    cfg_dict = OmegaConf.to_container(cfg, resolve=True)
+    cfg_dict = {str(key): value for key, value in cfg_dict.items()}  # Ensure all keys are strings
+
+    try:
+        wandb.login(key=wandb_api_key)
+        wandb.init(
+            project="segmentationsuim",
+            config=cfg_dict,
+        )
+        wandb_enabled = True
+    except Exception as e:
+        logger.warning(f"Failed to initialize WandB: {e}")
+        wandb_enabled = False
+
+    if not wandb_enabled:
+        # Dummy function that is invoked when wandb is not enabled
+        def wandb_log_stub(_):
+            pass
+
+        wandb.log = wandb_log_stub
 
     download_dataset()
     data_path = "data/raw"
@@ -134,4 +165,5 @@ def main(cfg: DictConfig) -> None:
 
 
 if __name__ == "__main__":
+    load_dotenv()
     main()

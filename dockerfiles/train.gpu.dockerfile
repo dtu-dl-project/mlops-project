@@ -19,5 +19,6 @@ RUN pip install -r requirements.txt --no-cache-dir --verbose
 COPY src src/
 RUN pip install . --no-deps --no-cache-dir --verbose
 COPY config.yaml .
+COPY .env .
 
 ENTRYPOINT ["python", "-u", "src/segmentationsuim/train.py"]
