@@ -168,7 +168,7 @@ def main(cfg: DictConfig) -> None:
     model = UNetModule(unet, lr=cfg.training.optimizer.lr, image_size=IMAGE_SIZE)
 
     checkpoint_callback = ModelCheckpoint(
-        dirpath=cfg.checkpoints.dirpath, save_top_k=3, monitor="val_loss", filename="{{epoch}}-{{val_loss:.5f}}"
+        dirpath=cfg.checkpoints.dirpath, save_top_k=3, monitor="val_loss", filename="{epoch}-{val_loss:.5f}"
     )
 
     trainer = L.Trainer(max_epochs=cfg.training.max_epochs, callbacks=[checkpoint_callback])
