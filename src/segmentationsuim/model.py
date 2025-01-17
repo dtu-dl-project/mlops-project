@@ -72,13 +72,13 @@ class Upscaling(nn.Module):
         :return: Output tensor of shape (B, C_out, H, W).
         """
         x = self.upsample(x)
-        print(f"Upscaling Output Shape: {x.shape}")
+        # print(f"Upscaling Output Shape: {x.shape}")
         x_height, x_width = x.size()[2], x.size()[3]
         skip_height, skip_width = skip.size()[2], skip.size()[3]
         diffY = skip_height - x_height
         diffX = skip_width - x_width
-        print(f"Skip Shape: {skip.shape}")
-        print(f"DiffY: {diffY}, DiffX: {diffX}")
+        # print(f"Skip Shape: {skip.shape}")
+        # print(f"DiffY: {diffY}, DiffX: {diffX}")
         # Adjust the skip connection dimensions to match x
         if diffY > 0 or diffX > 0:
             # Crop the skip connection if it's larger than x
@@ -89,7 +89,7 @@ class Upscaling(nn.Module):
             # Pad the skip connection if it's smaller than x
             skip = F.pad(skip, [-diffX // 2, -diffX + (-diffX // 2), -diffY // 2, -diffY + (-diffY // 2)])
 
-        print(f"Adjusted Skip Shape: {skip.shape}")
+        # print(f"Adjusted Skip Shape: {skip.shape}")
         x = torch.cat([x, skip], dim=1)
         return self.conv_block(x)
 

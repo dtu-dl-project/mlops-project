@@ -1,7 +1,6 @@
 from omegaconf import DictConfig, OmegaConf
 from segmentationsuim.model import UNet
 from segmentationsuim.data import download_dataset, get_dataloaders
-from segmentationsuim.utils import index_to_one_hot
 
 from torchvision import transforms
 from lightning.pytorch.callbacks import ModelCheckpoint
@@ -35,7 +34,7 @@ class UNetModule(L.LightningModule):
         self.lr = lr
         self.image_size = image_size
         self.save_hyperparameters(ignore=["unet"])
-        self.val_mean_iou = MeanIoU(num_classes=8)
+        self.val_mean_iou = MeanIoU(num_classes=8, input_format="index")
 
     def step(self, batch, batch_idx):
         x, y = batch
@@ -56,8 +55,7 @@ class UNetModule(L.LightningModule):
     def validation_step(self, batch, batch_idx):
         loss, y_hat, y = self.step(batch, batch_idx)
         preds = T.argmax(y_hat, dim=1)
-        one_hot_y = index_to_one_hot(y, num_classes=8)
-        self.val_mean_iou.update(preds, one_hot_y)
+        self.val_mean_iou.update(preds, y.long())
         mean_iou = self.val_mean_iou.compute()
 
         self.log("val_loss", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
@@ -180,6 +178,7 @@ def main(cfg: DictConfig) -> None:
         dirpath=cfg.checkpoints.dirpath,
         save_top_k=3,
         monitor="val_mean_iou",
+        mode="max",
         filename="{epoch}-{val_loss:.5f}-{val_mean_iou:.5f}",
     )
 
