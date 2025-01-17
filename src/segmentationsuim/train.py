@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 unet = UNet(3, 8)  # 3 input channels, 8 output channels
 
-IMAGE_SIZE = (32, 32)
+IMAGE_SIZE = (572, 572)
 
 DEVICE = T.device("cuda" if T.cuda.is_available() else "mps" if T.backends.mps.is_available() else "cpu")
 
