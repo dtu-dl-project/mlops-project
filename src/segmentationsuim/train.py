@@ -57,14 +57,17 @@ class UNetModule(L.LightningModule):
         loss, y_hat, y = self.step(batch, batch_idx)
         preds = T.argmax(y_hat, dim=1)
         self.val_mean_iou.update(preds, y.long())
-        mean_iou = self.val_mean_iou.compute()
 
         self.log("val_loss", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
-        self.log("val_mean_iou", mean_iou, on_epoch=True, prog_bar=True, logger=True)
-        wandb.log({"val_loss": loss.item(), "val_mean_iou": mean_iou.item()})
+        wandb.log({"val_loss": loss.item()})
 
-        self.val_mean_iou.reset()
         return loss
+
+    def on_validation_epoch_end(self):
+        mean_iou = self.val_mean_iou.compute()
+        self.log("val_mean_iou", mean_iou, on_epoch=True, prog_bar=True, logger=True)
+        wandb.log({"val_mean_iou": mean_iou.item()})
+        self.val_mean_iou.reset()
 
     def configure_optimizers(self):
         return T.optim.Adam(self.parameters(), lr=self.lr)
@@ -172,15 +175,19 @@ def main(cfg: DictConfig) -> None:
         split_ratio=cfg.data_loader.split_ratio,
     )
 
-    # model = Trans(lr=cfg.training.optimizer.lr)
-    model = UNetModule(unet, lr=cfg.training.optimizer.lr, image_size=IMAGE_SIZE)
+    if cfg.training.model == "unet":
+        model = UNetModule(unet, lr=cfg.training.optimizer.lr, image_size=IMAGE_SIZE)
+    elif cfg.training.model == "trans":
+        model = Trans(lr=cfg.training.optimizer.lr)
+    else:
+        raise ValueError(f"Invalid model: {cfg.training.model}")
 
     checkpoint_callback = ModelCheckpoint(
         dirpath=cfg.checkpoints.dirpath,
         save_top_k=3,
         monitor="val_mean_iou",
         mode="max",
-        filename="{epoch}-{val_loss:.5f}-{val_mean_iou:.5f}",
+        filename=cfg.training.model + "_{epoch}-{val_loss:.5f}-{val_mean_iou:.5f}",
     )
 
     wandb_logger = WandbLogger(log_model="all")

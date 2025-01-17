@@ -1,8 +1,9 @@
 data_loader:
-  batch_size: 1
+  batch_size: 32
   workers: 4
   split_ratio: 0.8
 training:
+  model: "unet"
   optimizer:
     lr: 1e-3
   max_epochs: 2
