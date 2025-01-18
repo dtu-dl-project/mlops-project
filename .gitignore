@@ -183,3 +183,4 @@ lightning_logs/
 .env
 wandb/
 outputs/
+models/
