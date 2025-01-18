@@ -3,12 +3,14 @@ data_loader:
   workers: 4
   split_ratio: 0.8
 training:
-  model: "unet"
+  model: "transformer"               # options: "unet" or "transformer"
+  transformer_model: "nvidia/mit-b0" # options: "nvidia/mit-b0" or "nvidia/segformer-b0-finetuned-ade-512-512"
   optimizer:
     lr: 1e-3
-  max_epochs: 2
+  max_epochs: 200
   limits_batches:
     train: 1.0
     val: 1.0
 checkpoints:
   dirpath: "models/"
+  filename: "trans_epoch=128-val_loss=0.97229-val_mean_iou=0.69441.ckpt"

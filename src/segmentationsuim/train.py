@@ -74,11 +74,14 @@ class UNetModule(L.LightningModule):
 
 
 class Trans(L.LightningModule):
-    def __init__(self, lr):
+    def __init__(self, lr, model_name):
         super().__init__()
         output_classes = 8
 
-        self.model_name = "nvidia/mit-b0"
+        if model_name not in ["nvidia/mit-b0", "nvidia/segformer-b0-finetuned-ade-512-512"]:
+            raise ValueError(f"Invalid transformer model: {model_name}")
+
+        self.model_name = model_name
         self.processor = AutoImageProcessor.from_pretrained(self.model_name, do_rescale=False)
         self.model = SegformerForSemanticSegmentation.from_pretrained(
             self.model_name, num_labels=output_classes, ignore_mismatched_sizes=True
@@ -132,7 +135,7 @@ class Trans(L.LightningModule):
 
 @hydra.main(version_base=None, config_path="../../", config_name="config")
 def main(cfg: DictConfig) -> None:
-    logger.info(f"Configuration: {cfg}")
+    logger.info("\nConfiguration file:\n%s", OmegaConf.to_yaml(cfg))
     logging.basicConfig(level=logging.INFO)
 
     wandb_api_key = os.getenv("WANDB_API_KEY")
@@ -177,17 +180,23 @@ def main(cfg: DictConfig) -> None:
 
     if cfg.training.model == "unet":
         model = UNetModule(unet, lr=cfg.training.optimizer.lr, image_size=IMAGE_SIZE)
-    elif cfg.training.model == "trans":
-        model = Trans(lr=cfg.training.optimizer.lr)
+    elif cfg.training.model == "transformer":
+        model = Trans(lr=cfg.training.optimizer.lr, model_name=cfg.training.transformer_model)
     else:
         raise ValueError(f"Invalid model: {cfg.training.model}")
+
+    model_name = cfg.training.model
+    if model_name == "transformer":
+        model_name += "_" + cfg.training.transformer_model[7:]
+
+    logger.info(f"{cfg.training.transformer_model[7:]=}")
 
     checkpoint_callback = ModelCheckpoint(
         dirpath=cfg.checkpoints.dirpath,
         save_top_k=3,
         monitor="val_mean_iou",
         mode="max",
-        filename=cfg.training.model + "_{epoch}-{val_loss:.5f}-{val_mean_iou:.5f}",
+        filename=f"{model_name}_{{epoch}}-{{val_loss:.5f}}-{{val_mean_iou:.5f}}",
     )
 
     wandb_logger = WandbLogger(log_model="all")
