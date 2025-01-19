@@ -40,9 +40,9 @@ def preprocess_data(ctx: Context) -> None:
 
 
 @task
-def train(ctx: Context) -> None:
+def train(ctx: Context, config_path: str) -> None:
     """Train model."""
-    ctx.run(f"python src/{PROJECT_NAME}/train.py", echo=True, pty=not WINDOWS)
+    ctx.run(f"python src/{PROJECT_NAME}/train.py {config_path}", echo=True, pty=not WINDOWS)
 
 
 @task

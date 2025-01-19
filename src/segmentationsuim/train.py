@@ -4,6 +4,7 @@ from segmentationsuim.model import UNet
 from segmentationsuim.data import download_dataset, get_dataloaders
 
 from torchvision import transforms
+from pathlib import Path
 from lightning.pytorch.callbacks import ModelCheckpoint
 import lightning as L
 import torch.nn.functional as F
@@ -14,6 +15,7 @@ from transformers import AutoImageProcessor, SegformerForSemanticSegmentation
 
 import logging
 import hydra
+import sys
 import wandb
 import os
 from dotenv import load_dotenv
@@ -133,7 +135,7 @@ class Trans(L.LightningModule):
         return T.optim.Adam(self.parameters(), lr=self.lr)
 
 
-@hydra.main(version_base=None, config_path="../../", config_name="config")
+@hydra.main(version_base=None, config_path=None, config_name=None)
 def main(cfg: DictConfig) -> None:
     logger.info("\nConfiguration file:\n%s", OmegaConf.to_yaml(cfg))
     logging.basicConfig(level=logging.INFO)
@@ -192,8 +194,6 @@ def main(cfg: DictConfig) -> None:
     if model_name == "transformer":
         model_name += "_" + cfg.training.transformer_model[7:]
 
-    logger.info(f"{cfg.training.transformer_model[7:]=}")
-
     checkpoint_callback = ModelCheckpoint(
         dirpath=cfg.checkpoints.dirpath,
         save_top_k=3,
@@ -234,4 +234,12 @@ def main(cfg: DictConfig) -> None:
 
 if __name__ == "__main__":
     load_dotenv()
-    main()
+    if len(sys.argv) > 1:
+        path = Path(sys.argv[1])
+        config_path = "../../" + str(path.parent)
+        hydra.initialize(config_path=config_path)
+        cfg = hydra.compose(config_name=str(path.name))
+        main(cfg)
+    else:
+        # Raise an error if no arguments are provided
+        raise ValueError("Path to a config.yaml file must be provided as argument.")
