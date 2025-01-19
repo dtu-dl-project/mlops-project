@@ -227,6 +227,10 @@ def main(cfg: DictConfig) -> None:
             wandb.log_artifact(artifact)  # Log the artifact
             logger.info(f"Logged model artifact: {best_model_path}")
 
+            if wandb.run:
+                target_path = f"{wandb.run.entity}/model/suim"
+                artifact.link(target_path=target_path)
+
 
 if __name__ == "__main__":
     load_dotenv()
