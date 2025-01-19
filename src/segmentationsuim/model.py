@@ -12,11 +12,11 @@ class ConvBlock(nn.Module):
     def __init__(self, in_channels: int, out_channels: int, dropout: float = 0.0):
         super(ConvBlock, self).__init__()
         self.double_conv = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=0),
+            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True),
             nn.Dropout2d(p=dropout),  # Add dropout after the first activation
-            nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=0),
+            nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True),
             nn.Dropout2d(p=dropout),  # Add dropout after the second activation
