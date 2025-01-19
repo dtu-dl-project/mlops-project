@@ -15,3 +15,4 @@ training:
     val: 1.0
 checkpoints:
   dirpath: "models/"
+  filename: "transformer_mit-b0_bs=32_img_size=256_epoch=98-val_loss=1.17696-val_mean_iou=0.65841.ckpt"

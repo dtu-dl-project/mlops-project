@@ -184,3 +184,5 @@ lightning_logs/
 wandb/
 outputs/
 models/
+results/
+uploads/
