@@ -23,8 +23,6 @@ logger = logging.getLogger(__name__)
 
 unet = UNet(3, 8)  # 3 input channels, 8 output channels
 
-IMAGE_SIZE = (572, 572)
-
 DEVICE = T.device("cuda" if T.cuda.is_available() else "mps" if T.backends.mps.is_available() else "cpu")
 
 
@@ -34,13 +32,13 @@ class UNetModule(L.LightningModule):
         self.unet = unet
         self.lr = lr
         self.image_size = image_size
-        self.save_hyperparameters(ignore=["unet"])
         self.val_mean_iou = MeanIoU(num_classes=8, input_format="index")
+        self.save_hyperparameters("lr", "image_size")
 
     def step(self, batch, batch_idx):
         x, y = batch
         y_hat = self.unet(x)
-        mask_transform = transforms.Compose([transforms.Resize(IMAGE_SIZE, interpolation=Image.NEAREST)])
+        mask_transform = transforms.Compose([transforms.Resize(self.image_size, interpolation=Image.NEAREST)])
         y_hat = mask_transform(y_hat)
         loss = F.cross_entropy(y_hat, y.long())
         return loss, y_hat, y
@@ -74,7 +72,7 @@ class UNetModule(L.LightningModule):
 
 
 class Trans(L.LightningModule):
-    def __init__(self, lr, model_name):
+    def __init__(self, lr, model_name, image_size):
         super().__init__()
         output_classes = 8
 
@@ -87,7 +85,9 @@ class Trans(L.LightningModule):
             self.model_name, num_labels=output_classes, ignore_mismatched_sizes=True
         )  # Ignore original head
         self.lr = lr
+        self.image_size = image_size
         self.val_mean_iou = MeanIoU(num_classes=output_classes)
+        self.save_hyperparameters("lr", "model_name", "image_size")
 
     def step(self, batch, batch_idx):
         x, y = batch  # x shape: Batch x 3 x Width x Height
@@ -165,8 +165,9 @@ def main(cfg: DictConfig) -> None:
     download_dataset()
     data_path = "data/raw"
 
-    image_transform = transforms.Compose([transforms.Resize(IMAGE_SIZE), transforms.ToTensor()])
-    mask_transform = transforms.Compose([transforms.Resize(IMAGE_SIZE, interpolation=Image.NEAREST)])
+    img_size = cfg.image_transformations.image_size
+    image_transform = transforms.Compose([transforms.Resize((img_size, img_size)), transforms.ToTensor()])
+    mask_transform = transforms.Compose([transforms.Resize((img_size, img_size), interpolation=Image.NEAREST)])
 
     train_loader, val_loader, test_loader = get_dataloaders(
         data_path=data_path,
@@ -179,9 +180,11 @@ def main(cfg: DictConfig) -> None:
     )
 
     if cfg.training.model == "unet":
-        model = UNetModule(unet, lr=cfg.training.optimizer.lr, image_size=IMAGE_SIZE)
+        model = UNetModule(unet, lr=cfg.training.optimizer.lr, image_size=(img_size, img_size))
     elif cfg.training.model == "transformer":
-        model = Trans(lr=cfg.training.optimizer.lr, model_name=cfg.training.transformer_model)
+        model = Trans(
+            lr=cfg.training.optimizer.lr, model_name=cfg.training.transformer_model, image_size=(img_size, img_size)
+        )
     else:
         raise ValueError(f"Invalid model: {cfg.training.model}")
 
@@ -196,7 +199,7 @@ def main(cfg: DictConfig) -> None:
         save_top_k=3,
         monitor="val_mean_iou",
         mode="max",
-        filename=f"{model_name}_{{epoch}}-{{val_loss:.5f}}-{{val_mean_iou:.5f}}",
+        filename=f"{model_name}_bs={cfg.data_loader.batch_size}_img_size={img_size}_{{epoch}}-{{val_loss:.5f}}-{{val_mean_iou:.5f}}",
     )
 
     wandb_logger = WandbLogger(log_model="all")

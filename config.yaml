@@ -1,3 +1,5 @@
+image_transformations:
+  image_size: 256
 data_loader:
   batch_size: 32
   workers: 4
