@@ -1,18 +1,18 @@
-from segmentationsuim.train import UNetModule, unet
+from segmentationsuim.train import UNetModule, unet, Trans
 from segmentationsuim.data import download_dataset, get_dataloaders
-from segmentationsuim.utils import index_to_one_hot
 from omegaconf import DictConfig
 
-import torch
+import torch as T
 import logging
 import hydra
+import torch.nn.functional as F
 from torchvision import transforms
 from PIL import Image
 from torchmetrics.segmentation import MeanIoU
 from tqdm import tqdm
 
 NUM_CLASSES = 8
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
+DEVICE = T.device("cuda" if T.cuda.is_available() else "mps" if T.backends.mps.is_available() else "cpu")
 logger = logging.getLogger(__name__)
 
 
@@ -22,7 +22,12 @@ def evaluate(cfg: DictConfig) -> None:
     logger.info("Evaluating model...")
 
     logger.info(f"Loading model from {cfg.checkpoints.dirpath + cfg.checkpoints.filename}")
-    model = UNetModule.load_from_checkpoint(cfg.checkpoints.dirpath + cfg.checkpoints.filename, unet=unet)
+    if cfg.checkpoints.filename.startswith("unet"):
+        model = UNetModule.load_from_checkpoint(cfg.checkpoints.dirpath + cfg.checkpoints.filename, unet=unet)
+    elif cfg.checkpoints.filename.startswith("transformer"):
+        model = Trans.load_from_checkpoint(cfg.checkpoints.dirpath + cfg.checkpoints.filename)
+    else:
+        raise ValueError('Invalid checkpoint filename. It should start either with "unet" or "transformer"')
     logger.info("Model loaded successfully.")
 
     download_dataset()
@@ -46,9 +51,18 @@ def evaluate(cfg: DictConfig) -> None:
     iou = MeanIoU(num_classes=NUM_CLASSES).to(DEVICE)
     for img, target in tqdm(test_loader, desc="Evaluating"):
         img, target = img.to(DEVICE), target.to(DEVICE)
-        target = index_to_one_hot(target.long(), num_classes=NUM_CLASSES)
-        y_pred = model.unet(img).long()
-        iou.update(y_pred, target)
+        if cfg.checkpoints.filename.startswith("unet"):
+            pred = model.unet(img)
+            pred = T.argmax(pred, dim=1)
+        elif cfg.checkpoints.filename.startswith("transformer"):
+            img_proc = model.processor(images=img, return_tensors="pt").pixel_values.to(DEVICE)
+            y_hat = model.model(img_proc)
+            logits = y_hat.logits
+            logits_resized = F.interpolate(logits, size=model.image_size, mode="bilinear", align_corners=False)
+            pred = T.argmax(logits_resized, dim=1)
+        else:
+            raise ValueError('Invalid checkpoint filename. It should start either with "unet" or "transformer"')
+        iou.update(pred.long(), target.long())
 
     iou_score = iou.compute()
     logger.info(f"Mean Intersection Over Unit: {iou_score}")

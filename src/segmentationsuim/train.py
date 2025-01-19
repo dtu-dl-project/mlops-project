@@ -32,7 +32,7 @@ class UNetModule(L.LightningModule):
         self.unet = unet
         self.lr = lr
         self.image_size = image_size
-        self.val_mean_iou = MeanIoU(num_classes=8, input_format="index")
+        self.val_mean_iou = MeanIoU(num_classes=8)
         self.save_hyperparameters("lr", "image_size")
 
     def step(self, batch, batch_idx):

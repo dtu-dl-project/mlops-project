@@ -46,6 +46,30 @@ def train(ctx: Context) -> None:
 
 
 @task
+def visualize(ctx: Context, ckpt_path: str) -> None:
+    """Visualize inference of a model."""
+    slash_index = ckpt_path.rfind("/")
+    ckpt_filename = ckpt_path[slash_index + 1 :] if slash_index != -1 else ckpt_path
+    ctx.run(
+        f'python src/{PROJECT_NAME}/visualize.py +checkpoints.filename="{repr(ckpt_filename)}"',
+        echo=True,
+        pty=not WINDOWS,
+    )
+
+
+@task
+def evaluate(ctx: Context, ckpt_path: str) -> None:
+    """Visualize inference of a model."""
+    slash_index = ckpt_path.rfind("/")
+    ckpt_filename = ckpt_path[slash_index + 1 :] if slash_index != -1 else ckpt_path
+    ctx.run(
+        f'python src/{PROJECT_NAME}/evaluate.py +checkpoints.filename="{repr(ckpt_filename)}"',
+        echo=True,
+        pty=not WINDOWS,
+    )
+
+
+@task
 def test(ctx: Context) -> None:
     """Run tests."""
     ctx.run("coverage run -m pytest tests/", echo=True, pty=not WINDOWS)

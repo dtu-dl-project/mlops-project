@@ -1,11 +1,11 @@
 image_transformations:
   image_size: 256
 data_loader:
-  batch_size: 32
+  batch_size: 16
   workers: 4
   split_ratio: 0.8
 training:
-  model: "transformer"               # options: "unet" or "transformer"
+  model: "unet"               # options: "unet" or "transformer"
   transformer_model: "nvidia/mit-b0" # options: "nvidia/mit-b0" or "nvidia/segformer-b0-finetuned-ade-512-512"
   optimizer:
     lr: 1e-3
@@ -15,4 +15,3 @@ training:
     val: 1.0
 checkpoints:
   dirpath: "models/"
-  filename: "unet_bs=32_img_size=(256, 256)_epoch=56-val_loss=1.06876-val_mean_iou=0.13871.ckpt"
