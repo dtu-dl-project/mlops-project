@@ -1,0 +1,16 @@
+image_transformations:
+  image_size: 256
+data_loader:
+  batch_size: 16
+  workers: 4
+  split_ratio: 0.8
+training:
+  model: "unet"               # options: "unet" or "transformer"
+  optimizer:
+    lr: 1e-3
+  max_epochs: 200
+  limits_batches:
+    train: 1.0
+    val: 1.0
+checkpoints:
+  dirpath: "models/"
