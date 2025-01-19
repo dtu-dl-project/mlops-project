@@ -1,0 +1,25 @@
+name: Check staged model
+
+on:
+  repository_dispatch:
+    types: staged_model
+
+jobs:
+  identify_event:
+    runs-on: ubuntu-latest
+    outputs:
+      model_name: ${{ steps.set_output.outputs.model_name }}
+    steps:
+      - name: Check event type
+        run: |
+          echo "Event type: repository_dispatch"
+          echo "Payload Data: ${{ toJson(github.event.client_payload) }}"
+
+      - name: Setting model environment variable and output
+        id: set_output
+        run: |
+          echo "model_name=${{ github.event.client_payload.artifact_version_string }}" >> $GITHUB_OUTPUT
+
+      - name : Test
+        run: |
+          echo "ciao"
