@@ -1,4 +1,4 @@
-from segmentationsuim.train import UNetModule, unet
+from segmentationsuim.train import UNetModule, Trans, unet
 from segmentationsuim.data import download_dataset, get_dataloaders
 from omegaconf import DictConfig
 
@@ -15,7 +15,13 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.ba
 @hydra.main(version_base=None, config_path="../../", config_name="config")
 def visualize(cfg: DictConfig) -> None:
     """Visualize model predictions."""
-    model = UNetModule.load_from_checkpoint(cfg.checkpoints.dirpath + cfg.checkpoints.filename, unet=unet)
+
+    if cfg.checkpoints.filename.startswith("unet"):
+        model = UNetModule.load_from_checkpoint(cfg.checkpoints.dirpath + cfg.checkpoints.filename, unet=unet)
+    elif cfg.checkpoints.filename.startswith("transformer"):
+        model = Trans.load_from_checkpoint(cfg.checkpoints.dirpath + cfg.checkpoints.filename)
+    else:
+        raise ValueError('Invalid checkpoint filename. It should start either with "unet" or "transformer"')
     model.eval()
 
     download_dataset()
@@ -41,7 +47,17 @@ def visualize(cfg: DictConfig) -> None:
     with torch.inference_mode():
         for img, target in tqdm(test_loader, desc="Evaluating"):
             img, target = img.to(DEVICE), target.to(DEVICE)
-            pred = model.unet(img)
+
+            if cfg.checkpoints.filename.startswith("unet"):
+                pred = model.unet(img)
+            elif cfg.checkpoints.filename.startswith("transformer"):
+                img_proc = model.processor(images=img, return_tensors="pt").pixel_values.to(DEVICE)
+                y_hat = model.model(img_proc)
+                logits = y_hat.logits
+                pred = logits.argmax(dim=1)
+            else:
+                raise ValueError('Invalid checkpoint filename. It should start either with "unet" or "transformer"')
+
             images.append(img.cpu())
             targets.append(target.cpu())
             predictions.append(pred.cpu())
@@ -77,7 +93,14 @@ def visualize(cfg: DictConfig) -> None:
 
         # Plot the prediction
         plt.subplot(rows, cols, i * cols + 3)
-        plt.imshow(predictions[i].argmax(0), cmap="tab20", vmin=0, vmax=19)
+
+        if cfg.checkpoints.filename.startswith("unet"):
+            plt.imshow(predictions[i].argmax(0), cmap="tab20", vmin=0, vmax=19)
+        elif cfg.checkpoints.filename.startswith("transformer"):
+            plt.imshow(predictions[i], cmap="tab20", vmin=0, vmax=19)
+        else:
+            raise ValueError('Invalid checkpoint filename. It should start either with "unet" or "transformer"')
+
         plt.axis("off")
         plt.title(f"Prediction {i + 1}")
 
@@ -85,7 +108,9 @@ def visualize(cfg: DictConfig) -> None:
     plt.tight_layout()
 
     # Save the figure
-    plt.savefig("reports/figures/visualize.png")
+    dot_index = cfg.checkpoints.filename.rfind(".")
+    filename = cfg.checkpoints.filename[:dot_index] if dot_index != -1 else cfg.checkpoints.filename
+    plt.savefig(f"reports/figures/{filename}.png")
 
     # Optionally show the plot
     plt.show()
