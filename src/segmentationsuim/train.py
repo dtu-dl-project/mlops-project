@@ -234,12 +234,17 @@ def main(cfg: DictConfig) -> None:
 
 if __name__ == "__main__":
     load_dotenv()
+
     if len(sys.argv) > 1:
+        # Use the provided path from command-line arguments
         path = Path(sys.argv[1])
         config_path = "../../" + str(path.parent)
-        hydra.initialize(config_path=config_path)
-        cfg = hydra.compose(config_name=str(path.name))
-        main(cfg)
+        config_name = str(path.name)
     else:
-        # Raise an error if no arguments are provided
-        raise ValueError("Path to a config.yaml file must be provided as argument.")
+        # Use the default config file if no argument is provided
+        config_path = "../../"
+        config_name = "config.yaml"
+
+    hydra.initialize(config_path=config_path)
+    cfg = hydra.compose(config_name=config_name)
+    main(cfg)
