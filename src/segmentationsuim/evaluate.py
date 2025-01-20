@@ -5,6 +5,8 @@ from omegaconf import DictConfig
 import torch as T
 import logging
 import hydra
+import sys
+from pathlib import Path
 import torch.nn.functional as F
 from torchvision import transforms
 from PIL import Image
@@ -16,7 +18,7 @@ DEVICE = T.device("cuda" if T.cuda.is_available() else "mps" if T.backends.mps.i
 logger = logging.getLogger(__name__)
 
 
-@hydra.main(version_base=None, config_path="../../", config_name="config")
+@hydra.main(version_base=None, config_path=None, config_name=None)
 def evaluate(cfg: DictConfig) -> None:
     """Evaluate a trained model."""
     logger.info("Evaluating model...")
@@ -69,4 +71,24 @@ def evaluate(cfg: DictConfig) -> None:
 
 
 if __name__ == "__main__":
-    evaluate()
+    logging.basicConfig(level=logging.INFO)
+
+    if len(sys.argv) > 2:
+        # Use the provided path from command-line arguments
+        path = Path(sys.argv[1])
+        config_path = "../../" + str(path.parent)
+        config_name = str(path.name)
+
+        ckpt_path = Path(sys.argv[2])
+        ckpt_dir = ckpt_path.parent
+        ckpt_name = ckpt_path.name
+    else:
+        raise FileNotFoundError(
+            "Expected two arguments: (1) path to the config file and (2) path to the model checkpoint file. Please provide both paths."
+        )
+
+    hydra.initialize(config_path=config_path)
+    cfg = hydra.compose(config_name=config_name)
+    cfg.checkpoints.dirpath = str(ckpt_dir) + "/"
+    cfg.checkpoints.filename = ckpt_name
+    evaluate(cfg)

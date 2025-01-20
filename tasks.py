@@ -58,12 +58,10 @@ def visualize(ctx: Context, ckpt_path: str) -> None:
 
 
 @task
-def evaluate(ctx: Context, ckpt_path: str) -> None:
+def evaluate(ctx: Context, config_path: str, ckpt_path: str) -> None:
     """Visualize inference of a model."""
-    slash_index = ckpt_path.rfind("/")
-    ckpt_filename = ckpt_path[slash_index + 1 :] if slash_index != -1 else ckpt_path
     ctx.run(
-        f'python src/{PROJECT_NAME}/evaluate.py +checkpoints.filename="{repr(ckpt_filename)}"',
+        f"python src/{PROJECT_NAME}/evaluate.py {config_path} {ckpt_path}",
         echo=True,
         pty=not WINDOWS,
     )
