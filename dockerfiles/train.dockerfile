@@ -15,6 +15,6 @@ RUN pip install . --no-deps --no-cache-dir --verbose
 
 ARG CONFIG_PATH=configs/unet.yaml
 COPY ${CONFIG_PATH} config.yaml
-COPY default.env *.env .
+COPY *.env /
 
 ENTRYPOINT ["python", "-u", "src/segmentationsuim/train.py"]
