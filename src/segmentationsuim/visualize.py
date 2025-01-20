@@ -5,6 +5,9 @@ from omegaconf import DictConfig
 import matplotlib.pyplot as plt
 import torch
 import hydra
+import logging
+import sys
+from pathlib import Path
 from torchvision import transforms
 from PIL import Image
 from tqdm import tqdm
@@ -12,7 +15,7 @@ from tqdm import tqdm
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
 
 
-@hydra.main(version_base=None, config_path="../../", config_name="config")
+@hydra.main(version_base=None, config_path=None, config_name=None)
 def visualize(cfg: DictConfig) -> None:
     """Visualize model predictions."""
 
@@ -117,4 +120,24 @@ def visualize(cfg: DictConfig) -> None:
 
 
 if __name__ == "__main__":
-    visualize()
+    logging.basicConfig(level=logging.INFO)
+
+    if len(sys.argv) > 2:
+        # Use the provided path from command-line arguments
+        path = Path(sys.argv[1])
+        config_path = "../../" + str(path.parent)
+        config_name = str(path.name)
+
+        ckpt_path = Path(sys.argv[2])
+        ckpt_dir = ckpt_path.parent
+        ckpt_name = ckpt_path.name
+    else:
+        raise FileNotFoundError(
+            "Expected two arguments: (1) path to the config file and (2) path to the model checkpoint file. Please provide both paths."
+        )
+
+    hydra.initialize(config_path=config_path)
+    cfg = hydra.compose(config_name=config_name)
+    cfg.checkpoints.dirpath = str(ckpt_dir) + "/"
+    cfg.checkpoints.filename = ckpt_name
+    visualize(cfg)
