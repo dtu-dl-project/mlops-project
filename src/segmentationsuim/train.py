@@ -240,10 +240,12 @@ if __name__ == "__main__":
         path = Path(sys.argv[1])
         config_path = "../../" + str(path.parent)
         config_name = str(path.name)
-    else:
+    elif os.path.isfile("../../config.yaml"):
         # Use the default config file if no argument is provided
         config_path = "../../"
         config_name = "config.yaml"
+    else:
+        raise FileNotFoundError("No config file found, please provide a path to the config file as an argument")
 
     hydra.initialize(config_path=config_path)
     cfg = hydra.compose(config_name=config_name)
