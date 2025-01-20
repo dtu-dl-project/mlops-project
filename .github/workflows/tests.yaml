@@ -40,3 +40,8 @@ jobs:
         run: |
           coverage run -m pytest tests/unit_tests/
           coverage report -m
+
+      - name: Run API tests
+        run: |
+          coverage run -m pytest tests/integration_tests/
+          coverage report -m
