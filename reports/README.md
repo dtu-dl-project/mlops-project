@@ -118,7 +118,7 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- question 1 fill here ---
+71
 
 ### Question 2
 > **Enter the study number for each member in the group**
@@ -129,7 +129,7 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- question 2 fill here ---
+s243123, s243124, s243125, s243133
 
 ### Question 3
 > **A requirement to the project is that you include a third-party package not covered in the course. What framework**
@@ -143,7 +143,7 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- question 3 fill here ---
+For our project, we chose to work with the **Hugging Face Transformers** library. We utilized its **SegformerForSemanticSegmentation** model and the **AutoImageProcessor** to process and segment images efficiently. The **Segformer** model, a transformer-based architecture, provided state-of-the-art performance for semantic segmentation tasks. The **AutoImageProcessor** allowed for seamless preprocessing of images before feeding them into the model, ensuring compatibility with the model's input requirements. This framework significantly streamlined the workflow, reducing the need for manual preprocessing and model configuration. It enabled us to focus on training and evaluation while leveraging pre-trained models, saving considerable development time. Overall, Hugging Face Transformers was instrumental in enhancing the accuracy and efficiency of our project, making it easier to integrate cutting-edge transformer models into our solution.
 
 ## Coding environment
 
@@ -213,7 +213,9 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- question 7 fill here ---
+In total we have implemented 11 tests. Primarly we are testing that data is being correctly downloaded and loaded.
+Moreover, the mapping of the classes is checked. The U-Net model is extensively analyzed to check for correct shapes of the various layers.
+Finally the API is checked by using a GET operation and verifying that a response is sent.
 
 ### Question 8
 
@@ -356,7 +358,11 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- question 16 fill here ---
+We used both the VSCode debugger and the Python Debugger (pdb). As the latter one was also suggested during the guest lecture.
+In general thanks to breakpoints we were able to live check the shapes of the tensors and test some commands we had doubts on.
+We used profiling as image loading seemed to be quite slow for some images.
+Thanks to such analysis and the use of the debugger we discovered some errors in the originally used dataset. Which was fixed by a following version.
+
 
 ## Working in the cloud
 
