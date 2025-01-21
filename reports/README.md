@@ -48,45 +48,45 @@ will check the repositories and the code to verify your answers.
 
 ### Week 1
 
-* [ ] Create a git repository (M5)
-* [ ] Make sure that all team members have write access to the GitHub repository (M5)
-* [ ] Create a dedicated environment for you project to keep track of your packages (M2)
-* [ ] Create the initial file structure using cookiecutter with an appropriate template (M6)
-* [ ] Fill out the `data.py` file such that it downloads whatever data you need and preprocesses it (if necessary) (M6)
-* [ ] Add a model to `model.py` and a training procedure to `train.py` and get that running (M6)
-* [ ] Remember to fill out the `requirements.txt` and `requirements_dev.txt` file with whatever dependencies that you
+* [X] Create a git repository (M5)
+* [X] Make sure that all team members have write access to the GitHub repository (M5)
+* [X] Create a dedicated environment for you project to keep track of your packages (M2)
+* [X] Create the initial file structure using cookiecutter with an appropriate template (M6)
+* [X] Fill out the `data.py` file such that it downloads whatever data you need and preprocesses it (if necessary) (M6)
+* [X] Add a model to `model.py` and a training procedure to `train.py` and get that running (M6)
+* [X] Remember to fill out the `requirements.txt` and `requirements_dev.txt` file with whatever dependencies that you
     are using (M2+M6)
-* [ ] Remember to comply with good coding practices (`pep8`) while doing the project (M7)
-* [ ] Do a bit of code typing and remember to document essential parts of your code (M7)
+* [X] Remember to comply with good coding practices (`pep8`) while doing the project (M7)
+* [X] Do a bit of code typing and remember to document essential parts of your code (M7)
 * [ ] Setup version control for your data or part of your data (M8)
-* [ ] Add command line interfaces and project commands to your code where it makes sense (M9)
-* [ ] Construct one or multiple docker files for your code (M10)
-* [ ] Build the docker files locally and make sure they work as intended (M10)
-* [ ] Write one or multiple configurations files for your experiments (M11)
-* [ ] Used Hydra to load the configurations and manage your hyperparameters (M11)
-* [ ] Use profiling to optimize your code (M12)
-* [ ] Use logging to log important events in your code (M14)
-* [ ] Use Weights & Biases to log training progress and other important metrics/artifacts in your code (M14)
-* [ ] Consider running a hyperparameter optimization sweep (M14)
-* [ ] Use PyTorch-lightning (if applicable) to reduce the amount of boilerplate in your code (M15)
+* [X] Add command line interfaces and project commands to your code where it makes sense (M9)
+* [X] Construct one or multiple docker files for your code (M10)
+* [X] Build the docker files locally and make sure they work as intended (M10)
+* [X] Write one or multiple configurations files for your experiments (M11)
+* [X] Used Hydra to load the configurations and manage your hyperparameters (M11)
+* [X] Use profiling to optimize your code (M12)
+* [X] Use logging to log important events in your code (M14)
+* [X] Use Weights & Biases to log training progress and other important metrics/artifacts in your code (M14)
+* [X] Consider running a hyperparameter optimization sweep (M14)
+* [X] Use PyTorch-lightning (if applicable) to reduce the amount of boilerplate in your code (M15)
 
 ### Week 2
 
-* [ ] Write unit tests related to the data part of your code (M16)
-* [ ] Write unit tests related to model construction and or model training (M16)
-* [ ] Calculate the code coverage (M16)
-* [ ] Get some continuous integration running on the GitHub repository (M17)
-* [ ] Add caching and multi-os/python/pytorch testing to your continuous integration (M17)
-* [ ] Add a linting step to your continuous integration (M17)
-* [ ] Add pre-commit hooks to your version control setup (M18)
+* [X] Write unit tests related to the data part of your code (M16)
+* [X] Write unit tests related to model construction and or model training (M16)
+* [X] Calculate the code coverage (M16)
+* [X] Get some continuous integration running on the GitHub repository (M17)
+* [X] Add caching and multi-os/python/pytorch testing to your continuous integration (M17)
+* [X] Add a linting step to your continuous integration (M17)
+* [X] Add pre-commit hooks to your version control setup (M18)
 * [ ] Add a continues workflow that triggers when data changes (M19)
-* [ ] Add a continues workflow that triggers when changes to the model registry is made (M19)
+* [X] Add a continues workflow that triggers when changes to the model registry is made (M19)
 * [ ] Create a data storage in GCP Bucket for your data and link this with your data version control setup (M21)
-* [ ] Create a trigger workflow for automatically building your docker images (M21)
+* [X] Create a trigger workflow for automatically building your docker images (M21)
 * [ ] Get your model training in GCP using either the Engine or Vertex AI (M21)
-* [ ] Create a FastAPI application that can do inference using your model (M22)
+* [X] Create a FastAPI application that can do inference using your model (M22)
 * [ ] Deploy your model in GCP using either Functions or Run as the backend (M23)
-* [ ] Write API tests for your application and setup continues integration for these (M24)
+* [X] Write API tests for your application and setup continues integration for these (M24)
 * [ ] Load test your application (M24)
 * [ ] Create a more specialized ML-deployment API using either ONNX or BentoML, or both (M25)
 * [ ] Create a frontend for your API (M26)
@@ -150,7 +150,7 @@ For our project, we chose to work with the **Hugging Face Transformers** library
 > In the following section we are interested in learning more about you local development environment. This includes
 > how you managed dependencies, the structure of your code and how you managed code quality.
 
-### Question 4
+### Question 4 -> Manu
 
 > **Explain how you managed dependencies in your project? Explain the process a new team member would have to go**
 > **through to get an exact copy of your environment.**
@@ -165,7 +165,7 @@ For our project, we chose to work with the **Hugging Face Transformers** library
 
 --- question 4 fill here ---
 
-### Question 5
+### Question 5 ->Albe
 
 > **We expect that you initialized your project using the cookiecutter template. Explain the overall structure of your**
 > **code. What did you fill out? Did you deviate from the template in some way?**
@@ -181,7 +181,7 @@ For our project, we chose to work with the **Hugging Face Transformers** library
 
 --- question 5 fill here ---
 
-### Question 6
+### Question 6 -> Albe
 
 > **Did you implement any rules for code quality and format? What about typing and documentation? Additionally,**
 > **explain with your own words why these concepts matters in larger projects.**
@@ -201,7 +201,7 @@ For our project, we chose to work with the **Hugging Face Transformers** library
 > In the following section we are interested in how version control was used in your project during development to
 > corporate and increase the quality of your code.
 
-### Question 7
+### Question 7 -> Manu
 
 > **How many tests did you implement and what are they testing in your code?**
 >
@@ -217,7 +217,7 @@ In total we have implemented 11 tests. Primarly we are testing that data is bein
 Moreover, the mapping of the classes is checked. The U-Net model is extensively analyzed to check for correct shapes of the various layers.
 Finally the API is checked by using a GET operation and verifying that a response is sent.
 
-### Question 8
+### Question 8 -> Manu
 
 > **What is the total code coverage (in percentage) of your code? If your code had a code coverage of 100% (or close**
 > **to), would you still trust it to be error free? Explain you reasoning.**
@@ -232,7 +232,7 @@ Finally the API is checked by using a GET operation and verifying that a respons
 
 --- question 8 fill here ---
 
-### Question 9
+### Question 9 ->Gasp
 
 > **Did you workflow include using branches and pull requests? If yes, explain how. If not, explain how branches and**
 > **pull request can help improve version control.**
@@ -247,7 +247,7 @@ Finally the API is checked by using a GET operation and verifying that a respons
 
 --- question 9 fill here ---
 
-### Question 10
+### Question 10 -> Lore
 
 > **Did you use DVC for managing data in your project? If yes, then how did it improve your project to have version**
 > **control of your data. If no, explain a case where it would be beneficial to have version control of your data.**
@@ -262,7 +262,7 @@ Finally the API is checked by using a GET operation and verifying that a respons
 
 --- question 10 fill here ---
 
-### Question 11
+### Question 11 -> Albe
 
 > **Discuss you continuous integration setup. What kind of continuous integration are you running (unittesting,**
 > **linting, etc.)? Do you test multiple operating systems, Python  version etc. Do you make use of caching? Feel free**
@@ -284,7 +284,7 @@ Finally the API is checked by using a GET operation and verifying that a respons
 > In the following section we are interested in learning more about the experimental setup for running your code and
 > especially the reproducibility of your experiments.
 
-### Question 12
+### Question 12 -> Lore
 
 > **How did you configure experiments? Did you make use of config files? Explain with coding examples of how you would**
 > **run a experiment.**
@@ -298,7 +298,7 @@ Finally the API is checked by using a GET operation and verifying that a respons
 
 --- question 12 fill here ---
 
-### Question 13
+### Question 13 -> Lore
 
 > **Reproducibility of experiments are important. Related to the last question, how did you secure that no information**
 > **is lost when running experiments and that your experiments are reproducible?**
@@ -313,7 +313,7 @@ Finally the API is checked by using a GET operation and verifying that a respons
 
 --- question 13 fill here ---
 
-### Question 14
+### Question 14 -> Manu
 
 > **Upload 1 to 3 screenshots that show the experiments that you have done in W&B (or another experiment tracking**
 > **service of your choice). This may include loss graphs, logged images, hyperparameter sweeps etc. You can take**
@@ -330,7 +330,7 @@ Finally the API is checked by using a GET operation and verifying that a respons
 
 --- question 14 fill here ---
 
-### Question 15
+### Question 15 ->Albe
 
 > **Docker is an important tool for creating containerized applications. Explain how you used docker in your**
 > **experiments/project? Include how you would run your docker images and include a link to one of your docker files.**
@@ -345,7 +345,7 @@ Finally the API is checked by using a GET operation and verifying that a respons
 
 --- question 15 fill here ---
 
-### Question 16
+### Question 16 ->Gian
 
 > **When running into bugs while trying to run your experiments, how did you perform debugging? Additionally, did you**
 > **try to profile your code or do you think it is already perfect?**
@@ -440,7 +440,7 @@ Thanks to such analysis and the use of the debugger we discovered some errors in
 
 ## Deployment
 
-### Question 23
+### Question 23 -> Manu
 
 > **Did you manage to write an API for your model? If yes, explain how you did it and if you did anything special. If**
 > **not, explain how you would do it.**
