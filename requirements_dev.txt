@@ -19,3 +19,6 @@ mkdocstrings-python==1.12.2
 fastapi==0.115.6
 uvicorn==0.34.0
 python-multipart==0.0.20
+
+# data drifting
+evidently==0.5.1

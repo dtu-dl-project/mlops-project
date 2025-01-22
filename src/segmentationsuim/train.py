@@ -23,7 +23,10 @@ from torchmetrics.segmentation import MeanIoU
 
 logger = logging.getLogger(__name__)
 
-unet = UNet(3, 8)  # 3 input channels, 8 output channels
+NUM_CHANNELS = 3
+NUM_CLASSES = 8
+
+unet = UNet(NUM_CLASSES, NUM_CLASSES)  # input channels, output channels
 
 DEVICE = T.device("cuda" if T.cuda.is_available() else "mps" if T.backends.mps.is_available() else "cpu")
 
@@ -34,7 +37,7 @@ class UNetModule(L.LightningModule):
         self.unet = unet
         self.lr = lr
         self.image_size = image_size
-        self.val_mean_iou = MeanIoU(num_classes=8)
+        self.val_mean_iou = MeanIoU(num_classes=NUM_CLASSES)
         self.save_hyperparameters("lr", "image_size")
 
     def step(self, batch, batch_idx):
@@ -76,7 +79,7 @@ class UNetModule(L.LightningModule):
 class Trans(L.LightningModule):
     def __init__(self, lr, model_name, image_size):
         super().__init__()
-        output_classes = 8
+        output_classes = NUM_CLASSES
 
         if model_name not in ["nvidia/mit-b0", "nvidia/segformer-b0-finetuned-ade-512-512"]:
             raise ValueError(f"Invalid transformer model: {model_name}")
