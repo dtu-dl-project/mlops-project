@@ -232,7 +232,7 @@ Finally the API is checked by using a GET operation and verifying that a respons
 
 --- question 8 fill here ---
 
-### Question 9 ->Gasp
+### Question 9
 
 > **Did you workflow include using branches and pull requests? If yes, explain how. If not, explain how branches and**
 > **pull request can help improve version control.**
@@ -245,7 +245,10 @@ Finally the API is checked by using a GET operation and verifying that a respons
 >
 > Answer:
 
---- question 9 fill here ---
+We did not use branches and pull requests in our workflow. Instead, we worked directly on the main branch by frequently pushing changes and using git pull --rebase to stay updated with the latest changes from our collaborators.
+This approach made sense for our project because we had many small incremental ipdates. Hence, by making frequent pushes and using git pull --rebase, we ensured that our changes were continuously integrated with the latest updates, reducing the chance of large merge conflicts. Moreover, given the nature of our project, we opted for a streamlined approach that prioritized quick iteration and immediate feedback over the more formal process of pull requests.
+While pull requests and branches are powerful tools for version control, especially in larger teams or projects with more complex workflows, they weren’t critical for this specific use case. Pull requests allow for code review, ensuring quality control and adherence to coding standards. They help in tracking changes and documenting why decisions were made.
+For our project, however, the simplicity of a single branch aligned well with our objectives and helped us focus on rapid development and testing.
 
 ### Question 10 -> Lore
 
@@ -345,7 +348,7 @@ Finally the API is checked by using a GET operation and verifying that a respons
 
 --- question 15 fill here ---
 
-### Question 16 ->Gian
+### Question 16
 
 > **When running into bugs while trying to run your experiments, how did you perform debugging? Additionally, did you**
 > **try to profile your code or do you think it is already perfect?**
@@ -358,10 +361,10 @@ Finally the API is checked by using a GET operation and verifying that a respons
 >
 > Answer:
 
-We used both the VSCode debugger and the Python Debugger (pdb). As the latter one was also suggested during the guest lecture.
-In general thanks to breakpoints we were able to live check the shapes of the tensors and test some commands we had doubts on.
-We used profiling as image loading seemed to be quite slow for some images.
-Thanks to such analysis and the use of the debugger we discovered some errors in the originally used dataset. Which was fixed by a following version.
+During our development process, we utilized both the VSCode debugger and the Python Debugger (pdb), as the latter was recommended during the guest lecture. These tools provided invaluable assistance in identifying issues and understanding our code behavior in depth.
+One of the key features we leveraged was the ability to set breakpoints, which allowed us to monitor the shapes of tensors dynamically during runtime. This proved crucial in verifying the correctness of tensor transformations and testing specific commands that we were uncertain about. The immediate feedback offered by this approach helped us to debug effectively and refine our implementation.
+Additionally, we employed profiling techniques to address performance concerns. Specifically, we noticed that image loading was noticeably slow for certain images. Through careful analysis using the profiler, we identified bottlenecks in our data pipeline and took steps to mitigate these issues.
+As a result of our debugging and profiling efforts, we also uncovered errors in the originally used dataset. This discovery led us to investigate further, and the issues were subsequently resolved in a newer version of the dataset. Overall, the combined use of debugging tools and profiling not only enhanced our understanding of the code but also improved its efficiency and accuracy.
 
 
 ## Working in the cloud
