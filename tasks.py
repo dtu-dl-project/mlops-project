@@ -66,6 +66,16 @@ def evaluate(ctx: Context, config_path: str, ckpt_path: str) -> None:
 
 
 @task
+def onnx_generator(ctx: Context, config_path: str, ckpt_path: str) -> None:
+    """Create and test onnx model."""
+    ctx.run(
+        f"python src/{PROJECT_NAME}/onnx_generator.py {config_path} {ckpt_path}",
+        echo=True,
+        pty=not WINDOWS,
+    )
+
+
+@task
 def test(ctx: Context) -> None:
     """Run tests."""
     ctx.run("coverage run -m pytest tests/", echo=True, pty=not WINDOWS)

@@ -75,6 +75,9 @@ class UNetModule(L.LightningModule):
     def configure_optimizers(self):
         return T.optim.Adam(self.parameters(), lr=self.lr)
 
+    def forward(self, x):
+        return self.unet(x)
+
 
 class Trans(L.LightningModule):
     def __init__(self, lr, model_name, image_size):
@@ -136,6 +139,9 @@ class Trans(L.LightningModule):
 
     def configure_optimizers(self):
         return T.optim.Adam(self.parameters(), lr=self.lr)
+
+    def forward(self, x):
+        return self.model(self.processor(images=x, return_tensors="pt").pixel_values.to(DEVICE)).logits
 
 
 @hydra.main(version_base=None, config_path=None, config_name=None)
