@@ -18,7 +18,7 @@ def main():
                 "machineSpec": {"machineType": "n1-highmem-2"},
                 "replicaCount": 1,
                 "containerSpec": {
-                    "imageUri": "europe-west1-docker.pkg.dev/massive-mantra-315507/artifacts/test",
+                    "imageUri": "europe-west1-docker.pkg.dev/massive-mantra-315507/artifacts/train",
                     "env": [{"name": "WANDB_API_KEY", "value": api_key}],
                 },
             }

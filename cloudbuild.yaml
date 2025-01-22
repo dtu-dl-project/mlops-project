@@ -1,19 +1,83 @@
 steps:
 - name: 'gcr.io/cloud-builders/docker'
-  id: 'Build container image'
+  id: 'Build container image api'
   args: [
     'build',
     '.',
     '-t',
-    'europe-west1-docker.pkg.dev/$PROJECT_ID/artifacts/test',
+    'europe-west1-docker.pkg.dev/$PROJECT_ID/artifacts/api',
+    '-f',
+    'dockerfiles/api.dockerfile'
+  ]
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'Build container image evaluate'
+  args: [
+    'build',
+    '.',
+    '-t',
+    'europe-west1-docker.pkg.dev/$PROJECT_ID/artifacts/evaluate',
+    '-f',
+    'dockerfiles/evaluate.dockerfile'
+  ]
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'Build container image train'
+  args: [
+    'build',
+    '.',
+    '-t',
+    'europe-west1-docker.pkg.dev/$PROJECT_ID/artifacts/train',
     '-f',
     'dockerfiles/train.dockerfile'
   ]
 - name: 'gcr.io/cloud-builders/docker'
-  id: 'Push container image'
+  id: 'Build container image traingpu'
+  args: [
+    'build',
+    '.',
+    '-t',
+    'europe-west1-docker.pkg.dev/$PROJECT_ID/artifacts/traingpu',
+    '-f',
+    'dockerfiles/train.gpu.dockerfile'
+  ]
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'Build container image visualize'
+  args: [
+    'build',
+    '.',
+    '-t',
+    'europe-west1-docker.pkg.dev/$PROJECT_ID/artifacts/visualize',
+    '-f',
+    'dockerfiles/visualize.dockerfile'
+  ]
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'Push container image api'
   args: [
     'push',
-    'europe-west1-docker.pkg.dev/$PROJECT_ID/artifacts/test'
+    'europe-west1-docker.pkg.dev/$PROJECT_ID/artifacts/api'
+  ]
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'Push container image evaluate'
+  args: [
+    'push',
+    'europe-west1-docker.pkg.dev/$PROJECT_ID/artifacts/evaluate'
+  ]
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'Push container image train'
+  args: [
+    'push',
+    'europe-west1-docker.pkg.dev/$PROJECT_ID/artifacts/train'
+  ]
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'Push container image traingpu'
+  args: [
+    'push',
+    'europe-west1-docker.pkg.dev/$PROJECT_ID/artifacts/traingpu'
+  ]
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'Push container image visualize'
+  args: [
+    'push',
+    'europe-west1-docker.pkg.dev/$PROJECT_ID/artifacts/visualize'
   ]
 options:
   logging: CLOUD_LOGGING_ONLY
