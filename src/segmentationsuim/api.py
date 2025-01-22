@@ -1,5 +1,6 @@
 from fastapi import FastAPI, File, UploadFile, Query, HTTPException, BackgroundTasks
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
+from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
 from typing import Literal
 from torchvision import transforms
 from hydra import initialize, compose
@@ -13,12 +14,18 @@ import numpy as np
 from segmentationsuim.train import NUM_CLASSES
 from datetime import datetime
 from collections.abc import Generator
+import time
 
 # Import your models
 from segmentationsuim.train import UNetModule, unet, Trans
 
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# Prometheus metrics
+api_request_counter = Counter("api_requests_total", "Total number of API requests received")
+api_error_counter = Counter("api_errors_total", "Total number of API errors encountered")
+classification_time_histogram = Histogram("classification_time_seconds", "Time taken to classify an image")
 
 # Directories for uploads and results
 UPLOAD_FOLDER = "uploads"
@@ -64,6 +71,12 @@ async def read_root():
     }
 
 
+@app.get("/metrics")
+async def metrics():
+    """Expose metrics for Prometheus scraping."""
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+
 def extract_features(image):
     """Extract basic image features from a single image."""
     avg_brightness = np.mean(image)
@@ -105,6 +118,12 @@ async def predict(
     - Upload an image.
     - Choose the model type (`unet` or `transformer`).
     """
+    # Increment the API request counter
+    api_request_counter.inc()
+
+    # Start timing for the histogram
+    start_time = time.time()
+
     # Determine the configuration file to load based on the model type
     config_file = f"{model_type}.yaml"  # unet.yaml or transformer.yaml
     # Dynamically calculate the absolute path to `configs`
@@ -126,6 +145,8 @@ async def predict(
     try:
         model = load_model(cfg)
     except ValueError as e:
+        # Increment the error counter
+        api_error_counter.inc()
         raise HTTPException(status_code=400, detail=str(e))
 
     # Predict using the selected model
@@ -150,5 +171,9 @@ async def predict(
     background_tasks.add_task(add_to_database, now, *features, pred_features)
 
     del model
+
+    # Record classification time in the histogram
+    classification_time_histogram.observe(time.time() - start_time)
+
     # Return the prediction image
     return FileResponse(result_path, media_type="image/png", filename=f"prediction_{cfg.training.model}.png")
