@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 NUM_CHANNELS = 3
 NUM_CLASSES = 8
 
-unet = UNet(NUM_CLASSES, NUM_CLASSES)  # input channels, output channels
+unet = UNet(NUM_CHANNELS, NUM_CLASSES)  # input channels, output channels
 
 DEVICE = T.device("cuda" if T.cuda.is_available() else "mps" if T.backends.mps.is_available() else "cpu")
 
