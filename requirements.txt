@@ -13,3 +13,4 @@ transformers==4.48.0
 wandb==0.19.4
 python-dotenv==1.0.1
 httpx==0.28.1
+locust==2.32.6
