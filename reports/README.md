@@ -150,7 +150,7 @@ For our project, we chose to work with the **Hugging Face Transformers** library
 > In the following section we are interested in learning more about you local development environment. This includes
 > how you managed dependencies, the structure of your code and how you managed code quality.
 
-### Question 4 -> Manu
+### Question 4
 
 > **Explain how you managed dependencies in your project? Explain the process a new team member would have to go**
 > **through to get an exact copy of your environment.**
@@ -163,7 +163,13 @@ For our project, we chose to work with the **Hugging Face Transformers** library
 >
 > Answer:
 
---- question 4 fill here ---
+In our project two different ways of managing dependecies were used: Conda and UV. Some components of the group used UV and other Conda, that are both package and environment manager.
+However, after creating a virtual environment by using the chosen package manager, we have defined two files for installing dependencies: requirements.txt and requirements_dev.txt.
+The first one includes Python package for running script while the other one Python packages for running the API.
+Moreover, it's important also to build the project! So, concluding, for getting a complete copy of our development environment, one would have to run the following commands:
+pip install -r requirements.txt --no-cache-dir --verbose
+pip install -r requirements_dev.txt --no-cache-dir --verbose
+pip install . --no-deps --no-cache-dir --verbose
 
 ### Question 5 ->Albe
 
@@ -201,7 +207,7 @@ For our project, we chose to work with the **Hugging Face Transformers** library
 > In the following section we are interested in how version control was used in your project during development to
 > corporate and increase the quality of your code.
 
-### Question 7 -> Manu
+### Question 7
 
 > **How many tests did you implement and what are they testing in your code?**
 >
@@ -214,10 +220,10 @@ For our project, we chose to work with the **Hugging Face Transformers** library
 > Answer:
 
 In total we have implemented 11 tests. Primarly we are testing that data is being correctly downloaded and loaded.
-Moreover, the mapping of the classes is checked. The U-Net model is extensively analyzed to check for correct shapes of the various layers.
+Moreover, the mapping of the classes is checked. The U-Net model is extensively analyzed to check for correct shapes of the various layers while since transformer is mostly a closed function from the library, was difficult to assert things regarding the model.
 Finally the API is checked by using a GET operation and verifying that a response is sent.
 
-### Question 8 -> Manu
+### Question 8
 
 > **What is the total code coverage (in percentage) of your code? If your code had a code coverage of 100% (or close**
 > **to), would you still trust it to be error free? Explain you reasoning.**
@@ -230,7 +236,12 @@ Finally the API is checked by using a GET operation and verifying that a respons
 >
 > Answer:
 
---- question 8 fill here ---
+The code coverage is 39% for the API, focusing on verifying basic operations like GET requests and ensuring responses are handled correctly. For data-related code, coverage is 43%, since most of the code is from the dataloader and the main function for loading data, which are challenging to test. The model tests achieves 93% coverage because all components of the U-Net baseline, including layer shapes and functionality, have been tested.
+
+Our testing approach focused on unit tests, with a GitHub hook ensuring these tests run automatically on every push. We intentionally avoided testing training, evaluation, and visualization due to time constraints in GitHub Actions and the inefficiency of re-downloading datasets with every push.
+
+Even if the code had 100% coverage, it wouldn't guarantee it to be error-free. Coverage ensures that lines of code are executed during tests but doesn't confirm correctness or account for all edge cases. Logical errors, untested interactions between components, and issues with external dependencies can still occur.
+
 
 ### Question 9
 
@@ -474,7 +485,7 @@ As a result of our debugging and profiling efforts, we also uncovered errors in 
 
 --- question 24 fill here ---
 
-### Question 25
+### Question 25 -> Manu
 
 > **Did you perform any unit testing and load testing of your API? If yes, explain how you did it and what results for**
 > **the load testing did you get. If not, explain how you would do it.**
