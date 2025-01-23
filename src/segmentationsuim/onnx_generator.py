@@ -12,10 +12,32 @@ from torchvision import transforms
 from PIL import Image
 from torchmetrics.segmentation import MeanIoU
 from tqdm import tqdm
+import onnxruntime as rt
+import os
+import numpy as np
 
 NUM_CLASSES = 8
 DEVICE = T.device("cuda" if T.cuda.is_available() else "mps" if T.backends.mps.is_available() else "cpu")
 logger = logging.getLogger(__name__)
+
+
+def modify_file_extension(file_name: str, new_extension: str) -> str:
+    """
+    Modify the extension of a given file name.
+
+    :param file_name: Original file name (with extension).
+    :param new_extension: New extension to be added (with or without the leading dot).
+    :return: File name with the new extension.
+    """
+    # Remove the current extension
+    base_name = os.path.splitext(file_name)[0]
+
+    # Ensure the new extension starts with a dot
+    if not new_extension.startswith("."):
+        new_extension = "." + new_extension
+
+    # Return the file name with the new extension
+    return base_name + new_extension
 
 
 @hydra.main(version_base=None, config_path=None, config_name=None)
@@ -36,7 +58,6 @@ def evaluate(cfg: DictConfig) -> None:
     data_path = "data/raw"
 
     image_transform = transforms.Compose([transforms.Resize(model.image_size), transforms.ToTensor()])
-
     mask_transform = transforms.Compose([transforms.Resize(model.image_size, interpolation=Image.NEAREST)])
 
     _, _, test_loader = get_dataloaders(
@@ -52,9 +73,11 @@ def evaluate(cfg: DictConfig) -> None:
     model.eval()
     iou = MeanIoU(num_classes=NUM_CLASSES).to(DEVICE)
 
-    # peak at the first image in the test_loader, without removing it from previous iteration
+    # peak at the first image in the test_loader
     img, _ = next(iter(test_loader))
-    onnx_path = Path("models") / "model.onnx"
+
+    # Export model to ONNX
+    onnx_path = Path("models") / modify_file_extension(cfg.checkpoints.filename, "onnx")
     T.onnx.export(model, img, onnx_path, verbose=True)
     logger.info(f"Model stored as ONNX file: {onnx_path}")
     model.to_onnx(
@@ -64,25 +87,37 @@ def evaluate(cfg: DictConfig) -> None:
         output_names=["output"],
         dynamic_axes={"input": {0: "batch_size"}, "output": {0: "batch_size"}},
     )
-    breakpoint()
 
+    # Load ONNX model
+    ort_session = rt.InferenceSession(onnx_path)
+    input_names = [i.name for i in ort_session.get_inputs()]
+    output_names = [i.name for i in ort_session.get_outputs()]
+
+    # Restart from first element
     test_loader = iter(test_loader)
 
     for img, target in tqdm(test_loader, desc="Evaluating"):
         img, target = img.to(DEVICE), target.to(DEVICE)
-        if cfg.checkpoints.filename.startswith("unet"):
-            pred = model.unet(img)
-            pred = T.argmax(pred, dim=1)
-        elif cfg.checkpoints.filename.startswith("transformer"):
-            img_proc = model.processor(images=img, return_tensors="pt").pixel_values.to(DEVICE)
-            y_hat = model.model(img_proc)
-            logits = y_hat.logits
-            logits_resized = F.interpolate(logits, size=model.image_size, mode="bilinear", align_corners=False)
-            pred = T.argmax(logits_resized, dim=1)
-        else:
-            raise ValueError('Invalid checkpoint filename. It should start either with "unet" or "transformer"')
+
+        # Preprocess input for ONNX model
+        img_np = img.cpu().numpy().astype(np.float32)  # Convert to NumPy
+        batch = {input_names[0]: img_np}  # Prepare batch input
+
+        # Run inference
+        ort_outs = ort_session.run(output_names, batch)
+
+        # Process ONNX outputs
+        logits = T.tensor(ort_outs[0])  # Convert output to PyTorch tensor
+        logits = logits.to(DEVICE)
+
+        # Resize and take argmax if necessary
+        logits_resized = F.interpolate(logits, size=img.shape[2:], mode="bilinear", align_corners=False)
+        pred = T.argmax(logits_resized, dim=1)
+
+        # Update IoU metric
         iou.update(pred.long(), target.long())
 
+    # Compute and log IoU
     iou_score = iou.compute()
     logger.info(f"Mean Intersection Over Unit: {iou_score}")
 
