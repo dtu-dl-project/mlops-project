@@ -10,7 +10,7 @@ class UserBehavior(TaskSet):
         model_type = random.choice(["unet", "transformer"])
 
         # Path to a sample image for testing
-        image_path = "tests/test_data/processed/images/00000.png"  # Replace with your actual test image path
+        image_path = "tests/test_data/processed/test/images/00002.png"  # Replace with your actual test image path
         if not os.path.exists(image_path):
             print("Test image not found. Please add a test image to the path specified.")
             return
