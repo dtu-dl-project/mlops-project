@@ -185,7 +185,20 @@ pip install . --no-deps --no-cache-dir --verbose
 >
 > Answer:
 
---- question 5 fill here ---
+We initialized our repository from the cookiecutter template provided. The important
+parts we filled out were:
+- the configs/ directory, where we put the configurations for our runs
+- the dockerfiles/ directory, where we put the Dockerfiles
+- the src/ directory, where we put the code to run the project
+- the tests/ fodler, that contains both integration and unit testing
+
+Also, we put some useful files in the root directory of the project. Some examples
+are:
+- cloudbuild.yaml that contains the steps that Google Cloud Build will follow
+  to build and push the docker images to the registry
+- environment files, that we used to store the Weight and Biases api key
+- the run\_gcloud.py script that creates an instance running the api
+  container image
 
 ### Question 6 -> Albe
 
@@ -200,7 +213,18 @@ pip install . --no-deps --no-cache-dir --verbose
 >
 > Answer:
 
---- question 6 fill here ---
+To ensure code quality and consistency, we implemented the following:
+
+- **Linting and formatting**: We used `ruff` for linting and formatting. The `ruff` command was used to detect code style issues, and `ruff format` ensured consistent formatting across all files.
+- **Pre-commit hooks**: We set up a `pre-commit` configuration to automate checks before committing code. This included:
+  - Removing trailing whitespaces.
+  - Fixing end-of-file issues.
+  - Verifying YAML file integrity.
+  - Running `ruff` for both linting and formatting tasks.
+- **Typing**: We used type annotations in our code to ensure clarity and correctness. This added clarity for both developers and tools during static analysis.
+- **Documentation**: Docstrings were used to describe the functionality of methods and classes. For example, each method in our `UNet` implementation includes detailed descriptions of its purpose, input shapes, and output shapes.
+
+These practices are crucial in larger projects to ensure readability, prevent errors, and facilitate collaboration. For example, pre-commit hooks enforce code quality, while type annotations improve maintainability and debugging efficiency.
 
 ## Version control
 
@@ -279,7 +303,7 @@ For our project, however, the simplicity of a single branch aligned well with ou
 ### Question 11 -> Albe
 
 > **Discuss you continuous integration setup. What kind of continuous integration are you running (unittesting,**
-> **linting, etc.)? Do you test multiple operating systems, Python  version etc. Do you make use of caching? Feel free**
+> **linting, etc.)? Do you test multiple operating systems, Python version etc. Do you make use of caching? Feel free**
 > **to insert a link to one of your GitHub actions workflow.**
 >
 > Recommended answer length: 200-300 words.
@@ -291,7 +315,19 @@ For our project, however, the simplicity of a single branch aligned well with ou
 >
 > Answer:
 
---- question 11 fill here ---
+Our continuous integration setup is organized into a single GitHub Actions workflow file named `Unit Tests`. This setup ensures the robustness and compatibility of our codebase across different environments. Key aspects of our CI pipeline include:
+
+- **Testing Types**: We run both unit tests and integration tests to verify the correctness of individual modules and the interactions between them. Unit tests are located in the `tests/unit_tests/` directory, and integration tests in `tests/integration_tests/`.
+- **Operating Systems**: Our CI tests the code on multiple operating systems, including `ubuntu-latest`, `windows-latest`, and `macos-latest`, to ensure platform compatibility.
+- **Python Versions**: We validate our code against Python versions `3.12` and `3.11` using a matrix strategy.
+- **Caching**: To speed up the workflow, we enable caching for Python dependencies using `pip` cache. This reduces redundant installations across runs.
+- **Dependency Management**: Dependencies are installed from `requirements.txt`, `requirements_dev.txt`, and the project itself is installed to ensure accurate dependency resolution.
+
+An example workflow trigger occurs on pushes or pull requests targeting the `main` branch. The workflow includes the following steps:
+1. Code checkout using `actions/checkout@v4`.
+2. Python setup using `actions/setup-python@v5` with caching enabled.
+3. Installation of dependencies.
+4. Running unit tests and integration tests with coverage reporting via `coverage`.
 
 ## Running code and tracking experiments
 
@@ -392,7 +428,35 @@ In the second image is represented the experiment for Transformer
 >
 > Answer:
 
---- question 15 fill here ---
+For our project, we developed several Docker images, each designed for specific
+tasks such as training, evaluation, API deployment, and visualization. These
+containerized environments ensure reproducibility and portability across
+different systems.
+
+For instance, our **CPU training Docker image** is defined in `train.dockerfile`.
+It uses the `python:3.11-slim` base image and installs the necessary
+dependencies via `pip`. Additionally, the training script is set as the entry
+point, with configurations and environment variables included in the image.
+
+To build and run the training Docker image, the following commands are used:
+
+```bash
+docker build -f dockerfiles/train.dockerfile -t training-image:latest .
+```
+
+```bash
+docker run training-image:latest
+```
+
+**Link to the training Dockerfile**: [train.dockerfile](../dockerfiles/train.dockerfile)
+
+Other Dockerfiles include:
+- `train.gpu.dockerfile` for training on the GPU.
+- `evaluate.dockerfile` for evaluation tasks.
+- `api.dockerfile` for API deployment.
+- `visualize.dockerfile` for generating visualizations.
+
+This modular approach ensures each image is optimized for its intended use, simplifying deployment and improving maintainability.
 
 ### Question 16
 
@@ -428,7 +492,21 @@ As a result of our debugging and profiling efforts, we also uncovered errors in 
 >
 > Answer:
 
---- question 17 fill here ---
+We used the following Google Cloud Platform (GCP) services in our project:
+
+- **Artifact Registry**: Used to securely store and manage Docker container
+  images required for our workflows.
+- **Cloud Storage Bucket**: Utilized to store and manage datasets, ensuring
+  accessibility and durability for training and testing.
+- **Vertex AI**: Used to train machine learning models at scale, leveraging its
+  managed infrastructure and tools for efficient experimentation.
+- **Cloud Run**: Employed to deploy our containerized API services, providing a
+  scalable and serverless environment for hosting.
+- **Cloud Build Triggers**: Automated the CI/CD pipeline by integrating with
+  our GitHub repository to build and deploy Docker images upon code changes.
+
+These services together provided a seamless and scalable infrastructure to
+handle data storage, model training, container management, and deployment.
 
 ### Question 18
 
@@ -443,7 +521,23 @@ As a result of our debugging and profiling efforts, we also uncovered errors in 
 >
 > Answer:
 
---- question 18 fill here ---
+In our project, we did not directly utilize Compute Engine VMs because our
+workflows were designed to leverage other GCP services that eliminated the need
+for managing individual virtual machines.
+
+For model training, we used **Vertex AI**, which allowed us to upload container
+images and handle training tasks without manually provisioning or managing VMs.
+Vertex AI abstracts the underlying infrastructure while still providing
+high-performance environments for training.
+
+Similarly, for deploying our API, we used **Cloud Run**, which enabled
+serverless deployment of containerized applications. This service automatically
+managed scaling and infrastructure, further reducing the need for Compute
+Engine instances.
+
+By relying on these managed services, we avoided the complexity of provisioning
+and maintaining Compute Engine VMs, ensuring our project remained efficient and
+focused on core functionalities.
 
 ### Question 19
 
@@ -460,8 +554,8 @@ As a result of our debugging and profiling efforts, we also uncovered errors in 
 > **stored. You can take inspiration from [this figure](figures/registry.png).**
 >
 > Answer:
-
---- question 20 fill here ---
+[Figure 1](./figures/artifacts1.png)
+[Figure 2](./figures/artifacts2.png)
 
 ### Question 21
 
@@ -470,7 +564,7 @@ As a result of our debugging and profiling efforts, we also uncovered errors in 
 >
 > Answer:
 
---- question 21 fill here ---
+[Figure 1](./figures/cbuild.png)
 
 ### Question 22
 
@@ -485,7 +579,27 @@ As a result of our debugging and profiling efforts, we also uncovered errors in 
 >
 > Answer:
 
---- question 22 fill here ---
+Yes, we successfully trained our model in the cloud using **Vertex AI**. This
+was achieved through a script (`run_gcloud.py`) that automated the process of
+configuring and launching a training job in Vertex AI.
+
+The script performs the following steps:
+1. Logs in to **Weights & Biases (WandB)** to retrieve the API key required for
+   tracking experiments.
+2. Defines a training configuration in YAML format, specifying:
+   - The machine type (`n1-highmem-2`) for the training job.
+   - The Docker image containing our training code, hosted in Artifact
+     Registry.
+   - Environment variables, such as the WandB API key, to be passed to the
+     container.
+3. Saves the configuration to a file (`train_config.yaml`).
+4. Constructs and executes a `gcloud` command to create a Vertex AI custom
+training job in the `europe-west1` region.
+
+Using this setup, we leveraged Vertex AI's managed infrastructure to handle our
+training workloads efficiently, without needing to manually provision and
+maintain virtual machines. This approach streamlined the process and ensured
+scalability for our experiments.
 
 ## Deployment
 
