@@ -381,6 +381,7 @@ This approach ensures modularity and reproducibility.
 > *one would have to do ...*
 >
 > Answer:
+
 We ensured reproducibility using config files and comprehensive logging. Each experiment requires a config file specifying the model and hyperparameters, passed to the `train.py` script. Metrics are logged both in the terminal and to Weights & Biases for detailed tracking. Model checkpoints are saved in the `models/` directory with descriptive filenames, including the model type and hyperparameters.
 
 Additionally, hyperparameters are embedded in the saved checkpoint, eliminating the need to provide them manually when reloading the model. To reproduce an experiment, you only need the `train.py` script and the original config file, as outlined in the previous answer.
