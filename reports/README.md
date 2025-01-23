@@ -94,7 +94,7 @@ will check the repositories and the code to verify your answers.
 ### Week 3
 
 * [X] Check how robust your model is towards data drifting (M27)
-* [ ] Deploy to the cloud a drift detection API (M27)
+* [X] Deploy to the cloud a drift detection API (M27)
 * [X] Instrument your API with a couple of system metrics (M28)
 * [ ] Setup cloud monitoring of your instrumented application (M28)
 * [X] Create one or more alert systems in GCP to alert you if your app is not behaving correctly (M28)
@@ -298,7 +298,13 @@ For our project, however, the simplicity of a single branch aligned well with ou
 >
 > Answer:
 
---- question 10 fill here ---
+No, we did not use DVC for managing data in our project as we worked with a static dataset. However, data version control would be highly beneficial in cases where the dataset evolves. For instance, it allows tracking the exact dataset version used to train each model, ensuring traceability and reproducibility.
+
+When a model is deployed in production, new data often becomes available, requiring updates to the training set and model retraining. In such cases, DVC would help manage and version these incremental changes to the dataset. This ensures that any performance improvements or issues can be traced back to specific data versions.
+
+Additionally, DVC would enable seamless collaboration in scenarios where multiple team members need to access or modify the dataset. By providing a structured history of dataset changes, it prevents accidental overwrites and helps in maintaining consistent workflows.
+
+While not required for our static dataset, DVC is invaluable for dynamic, evolving datasets, especially in long-term projects or production pipelines.
 
 ### Question 11 -> Albe
 
@@ -346,7 +352,22 @@ An example workflow trigger occurs on pushes or pull requests targeting the `mai
 >
 > Answer:
 
---- question 12 fill here ---
+We configured experiments using Hydra with separate config files for each model: `unet.yaml` and `transformer.yaml`. To train a model, run:
+```bash
+python src/segmentationsuim/train.py configs/unet.yaml
+```
+or use Invoke:
+```bash
+invoke train configs/unet.yaml
+```
+Similarly, for evaluation or visualization, use:
+```bash
+python src/segmentationsuim/evaluate.py configs/unet.yaml model.ckpt
+python src/segmentationsuim/visualize.py configs/unet.yaml model.ckpt
+invoke evaluate configs/unet.yaml model.ckpt
+invoke visualize configs/unet.yaml model.ckpt
+```
+This approach ensures modularity and reproducibility.
 
 ### Question 13 -> Lore
 
@@ -360,8 +381,11 @@ An example workflow trigger occurs on pushes or pull requests targeting the `mai
 > *one would have to do ...*
 >
 > Answer:
+We ensured reproducibility using config files and comprehensive logging. Each experiment requires a config file specifying the model and hyperparameters, passed to the `train.py` script. Metrics are logged both in the terminal and to Weights & Biases for detailed tracking. Model checkpoints are saved in the `models/` directory with descriptive filenames, including the model type and hyperparameters.
 
---- question 13 fill here ---
+Additionally, hyperparameters are embedded in the saved checkpoint, eliminating the need to provide them manually when reloading the model. To reproduce an experiment, you only need the `train.py` script and the original config file, as outlined in the previous answer.
+
+For further consistency, we provided a Docker container that encapsulates the runtime environment. The container can be deployed using the `train.dockerfile`, ensuring consistent dependencies and settings across machines. This setup guarantees no information is lost and facilitates seamless experiment replication.
 
 ### Question 14 -> Manu
 
@@ -470,9 +494,12 @@ This modular approach ensures each image is optimized for its intended use, simp
 > Answer:
 
 During our development process, we utilized both the VSCode debugger and the Python Debugger (pdb), as the latter was recommended during the guest lecture. These tools provided invaluable assistance in identifying issues and understanding our code behavior in depth.
-One of the key features we leveraged was the ability to set breakpoints, which allowed us to monitor the shapes of tensors dynamically during runtime. This proved crucial in verifying the correctness of tensor transformations and testing specific commands that we were uncertain about. The immediate feedback offered by this approach helped us to debug effectively and refine our implementation.
+
+One of the key features we leveraged was the ability to set breakpoints, which allowed us to monitor the shapes of tensors dynamically during runtime. This proved crucial in verifying the correctness of tensor transformations and testing specific commands we were uncertain about. The immediate feedback offered by this approach helped us debug effectively and refine our implementation.
+
 Additionally, we employed profiling techniques to address performance concerns. Specifically, we noticed that image loading was noticeably slow for certain images. Through careful analysis using the profiler, we identified bottlenecks in our data pipeline and took steps to mitigate these issues.
-As a result of our debugging and profiling efforts, we also uncovered errors in the originally used dataset. This discovery led us to investigate further, and the issues were subsequently resolved in a newer version of the dataset. Overall, the combined use of debugging tools and profiling not only enhanced our understanding of the code but also improved its efficiency and accuracy.
+
+As a result of our debugging and profiling efforts, we also uncovered errors in the originally used dataset. This discovery led us to investigate further, and the issues were resolved in a newer version of the dataset. Overall, the combined use of debugging tools and profiling enhanced our understanding of the code and improved its efficiency and accuracy.
 
 
 ## Working in the cloud
