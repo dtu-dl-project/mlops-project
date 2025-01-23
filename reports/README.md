@@ -675,7 +675,7 @@ It's important to use the flag memory because the default setting is imposed to 
 If the API is already deployed and accessible (either locally or on GCloud), by invoking "curl URL" will be possible to use it.
 For discovering a little bit more about prometheus metrics, it's possible to visit /metrics page.
 
-### Question 25 -> Lore lancia un locust e aggiorna ultima parte coi dati mediani
+### Question 25
 
 > **Did you perform any unit testing and load testing of your API? If yes, explain how you did it and what results for**
 > **the load testing did you get. If not, explain how you would do it.**
@@ -709,9 +709,9 @@ A task was created to:
 https://api-288862848403.europe-west1.run.app or the chosen URL
 
 **Median Response Time**:
-- **81ms** for `transformer`.
-- **85ms** for `unet`.
-- **Requests Per Second (RPS)**: **0.7** aggregated across all tasks.
+- **63ms** for `transformer`.
+- **63ms** for `unet`.
+- **Requests Per Second (RPS)**: **0.6** aggregated across all tasks.
 - **Failures**: None recorded.
 
 
