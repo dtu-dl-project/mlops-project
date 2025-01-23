@@ -769,7 +769,7 @@ A **trigger system** monitors the number of concurrent requests. If the requests
 
 --- question 27 fill here ---
 
-### Question 28
+### Question 28 -> Lore
 
 > **Did you implement anything extra in your project that is not covered by other questions? Maybe you implemented**
 > **a frontend for your API, use extra version control features, a drift detection service, a kubernetes cluster etc.**
