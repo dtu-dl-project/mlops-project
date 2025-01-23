@@ -236,7 +236,7 @@ Finally the API is checked by using a GET operation and verifying that a respons
 >
 > Answer:
 
-The code coverage is 39% for the API, focusing on verifying basic operations like GET requests and ensuring responses are handled correctly. For data-related code, coverage is 43%, since most of the code is from the dataloader and the main function for loading data, which are challenging to test. The model tests achieves 93% coverage because all components of the U-Net baseline, including layer shapes and functionality, have been tested.
+The code coverage is 39% for the API, focusing on verifying basic operations like GET requests and ensuring responses are handled correctly. For data-related code, coverage is up to 50%, since most of the code is from the main function for loading data, used for doing the whole process of obtaining data, which are challenging to test. The model tests achieves 93% coverage because all components of the U-Net baseline, including layer shapes and functionality, have been tested.
 
 Our testing approach focused on unit tests, with a GitHub hook ensuring these tests run automatically on every push. We intentionally avoided testing training, evaluation, and visualization due to time constraints in GitHub Actions and the inefficiency of re-downloading datasets with every push.
 
@@ -342,7 +342,42 @@ For our project, however, the simplicity of a single branch aligned well with ou
 >
 > Answer:
 
---- question 14 fill here ---
+We used Weight and Biases for logging our experiments and we focused on three different metrics: the first one, and also the most important, is Mean Intersection over Unit (mIoU), which tells the percentage of pixels that have the same class with respect to the ground truth. An higher value of mIoU correspodns to a more precise prediction.
+The second and third metrics are, as usual, train loss and validation loss, computed at the end of each epoch. We decided to not include in Weight and Biases the log of images during training since we had already the mIoU metric that is more concise and at the same time precise.
+We focused on evaluating two different models, a Unet that worked as a baseline, and a fine tuned Transformer, that is our best model.
+
+
+```markdown
+![Unet_wandb](figures/Unet_Wandb.png)
+```
+In the first image is represented the experiment for Unet
+- **Validation Mean IOU**:
+  - The mean IOU improves steadily, stabilizing around 100 epochs, indicating that the model is learning
+- **Training Loss**:
+  - Training loss reduces over time but with some spikes, maybe due to learning rate.
+- **Validation Loss**:
+  - Decreases consistently, showing good generalization
+
+```markdown
+![Unet_wandb](figures/Trans_Wandb.png)
+```
+In the second image is represented the experiment for Transformer
+- **Validation Mean IOU**:
+  - Achieves higher IOU early, stabilizing before UNet.
+- **Training Loss**:
+  - Stable training loss.
+- **Validation Loss**:
+  - Increases after 100 epochs, potentially from overfitting, while the meanIoU still increases.
+```markdown
+![Unet_wandb](figures/Comparison_Wandb.png)
+```
+- Transformer shows better performance initially but overfits as epochs progress.
+- UNet remains more stable, though with higher overall loss.
+- UNet exhibits more fluctuation; Transformer is more stable.
+- Transformer achieves higher IOU
+
+
+
 
 ### Question 15 ->Albe
 
