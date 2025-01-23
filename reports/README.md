@@ -171,7 +171,7 @@ pip install -r requirements.txt --no-cache-dir --verbose
 pip install -r requirements_dev.txt --no-cache-dir --verbose
 pip install . --no-deps --no-cache-dir --verbose
 
-### Question 5 ->Albe
+### Question 5
 
 > **We expect that you initialized your project using the cookiecutter template. Explain the overall structure of your**
 > **code. What did you fill out? Did you deviate from the template in some way?**
@@ -200,7 +200,7 @@ are:
 - the run\_gcloud.py script that creates an instance running the api
   container image
 
-### Question 6 -> Albe
+### Question 6
 
 > **Did you implement any rules for code quality and format? What about typing and documentation? Additionally,**
 > **explain with your own words why these concepts matters in larger projects.**
@@ -285,7 +285,7 @@ This approach made sense for our project because we had many small incremental i
 While pull requests and branches are powerful tools for version control, especially in larger teams or projects with more complex workflows, they weren’t critical for this specific use case. Pull requests allow for code review, ensuring quality control and adherence to coding standards. They help in tracking changes and documenting why decisions were made.
 For our project, however, the simplicity of a single branch aligned well with our objectives and helped us focus on rapid development and testing.
 
-### Question 10 -> Lore
+### Question 10
 
 > **Did you use DVC for managing data in your project? If yes, then how did it improve your project to have version**
 > **control of your data. If no, explain a case where it would be beneficial to have version control of your data.**
@@ -306,7 +306,7 @@ Additionally, DVC would enable seamless collaboration in scenarios where multipl
 
 While not required for our static dataset, DVC is invaluable for dynamic, evolving datasets, especially in long-term projects or production pipelines.
 
-### Question 11 -> Albe
+### Question 11
 
 > **Discuss you continuous integration setup. What kind of continuous integration are you running (unittesting,**
 > **linting, etc.)? Do you test multiple operating systems, Python version etc. Do you make use of caching? Feel free**
@@ -340,7 +340,7 @@ An example workflow trigger occurs on pushes or pull requests targeting the `mai
 > In the following section we are interested in learning more about the experimental setup for running your code and
 > especially the reproducibility of your experiments.
 
-### Question 12 -> Lore
+### Question 12
 
 > **How did you configure experiments? Did you make use of config files? Explain with coding examples of how you would**
 > **run a experiment.**
@@ -369,7 +369,7 @@ invoke visualize configs/unet.yaml model.ckpt
 ```
 This approach ensures modularity and reproducibility.
 
-### Question 13 -> Lore
+### Question 13
 
 > **Reproducibility of experiments are important. Related to the last question, how did you secure that no information**
 > **is lost when running experiments and that your experiments are reproducible?**
@@ -388,7 +388,7 @@ Additionally, hyperparameters are embedded in the saved checkpoint, eliminating 
 
 For further consistency, we provided a Docker container that encapsulates the runtime environment. The container can be deployed using the `train.dockerfile`, ensuring consistent dependencies and settings across machines. This setup guarantees no information is lost and facilitates seamless experiment replication.
 
-### Question 14 -> Manu
+### Question 14
 
 > **Upload 1 to 3 screenshots that show the experiments that you have done in W&B (or another experiment tracking**
 > **service of your choice). This may include loss graphs, logged images, hyperparameter sweeps etc. You can take**
@@ -438,7 +438,7 @@ In the second image is represented the experiment for Transformer
 
 
 
-### Question 15 ->Albe
+### Question 15
 
 > **Docker is an important tool for creating containerized applications. Explain how you used docker in your**
 > **experiments/project? Include how you would run your docker images and include a link to one of your docker files.**
@@ -565,7 +565,7 @@ By relying on these managed services, we avoided the complexity of provisioning
 and maintaining Compute Engine VMs, ensuring our project remained efficient and
 focused on core functionalities.
 
-### Question 19
+### Question 19 -> Lore inserisci la tua
 
 > **Insert 1-2 images of your GCP bucket, such that we can see what data you have stored in it.**
 > **You can take inspiration from [this figure](figures/bucket.png).**
@@ -630,7 +630,7 @@ scalability for our experiments.
 
 ## Deployment
 
-### Question 23
+### Question 23 -> Lore dai check
 
 > **Did you manage to write an API for your model? If yes, explain how you did it and if you did anything special. If**
 > **not, explain how you would do it.**
@@ -675,7 +675,7 @@ It's important to use the flag memory because the default setting is imposed to 
 If the API is already deployed and accessible (either locally or on GCloud), by invoking "curl URL" will be possible to use it.
 For discovering a little bit more about prometheus metrics, it's possible to visit /metrics page.
 
-### Question 25
+### Question 25 -> Lore lancia un locust e aggiorna ultima parte coi dati mediani
 
 > **Did you perform any unit testing and load testing of your API? If yes, explain how you did it and what results for**
 > **the load testing did you get. If not, explain how you would do it.**
