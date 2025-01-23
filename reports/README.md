@@ -554,8 +554,8 @@ focused on core functionalities.
 > **stored. You can take inspiration from [this figure](figures/registry.png).**
 >
 > Answer:
-[Figure 1](./figures/artifacts1.png)
-[Figure 2](./figures/artifacts2.png)
+![Figure 1](./figures/artifacts1.png)
+![Figure 2](./figures/artifacts2.png)
 
 ### Question 21
 
@@ -564,7 +564,7 @@ focused on core functionalities.
 >
 > Answer:
 
-[Figure 1](./figures/cbuild.png)
+![Figure 1](./figures/cbuild.png)
 
 ### Question 22
 
