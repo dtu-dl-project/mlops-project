@@ -565,7 +565,7 @@ By relying on these managed services, we avoided the complexity of provisioning
 and maintaining Compute Engine VMs, ensuring our project remained efficient and
 focused on core functionalities.
 
-### Question 19 -> Lore inserisci la tua
+### Question 19
 
 > **Insert 1-2 images of your GCP bucket, such that we can see what data you have stored in it.**
 > **You can take inspiration from [this figure](figures/bucket.png).**
@@ -573,6 +573,7 @@ focused on core functionalities.
 > Answer:
 
 ![GCP_Bucket](figures/GCP_Bucket.png)
+![GCP_Bucket_2](figures/GCP_Bucket_2.png)
 
 ### Question 20
 
@@ -630,7 +631,7 @@ scalability for our experiments.
 
 ## Deployment
 
-### Question 23 -> Lore dai check
+### Question 23
 
 > **Did you manage to write an API for your model? If yes, explain how you did it and if you did anything special. If**
 > **not, explain how you would do it.**
@@ -643,9 +644,9 @@ scalability for our experiments.
 >
 > Answer:
 
-We created an API for the project using FastAPI, designed to handle image segmentation tasks. The main function is to have the possibility of choosing which model to use between Unet and Transformer and then, by uplaoding the images, the API will give it back the segmented images using the model chosen.
-Predictions are processed asynchronously to reduce latency.
-The API integrates Prometheus metrics to track total requests, errors, and the time taken for predictions. Moreover, it has been included data drifting for detecting changes in the data and in the predictions triggered by some metrics like average brightness, contrast and sharpness of the input images.
+We created an API for the project using FastAPI, designed to handle image segmentation tasks. The main function is to have the possibility of choosing which model to use between Unet and Transformer and then, by uploading the images, the API will give it back the segmented images using the model chosen.
+Predictions are processed asynchronously to reduce latency. If the selected model is not available locally, it is automatically downloaded from a GCP bucket. Additionally, all predictions are saved to the bucket for future use, such as performing data drift detection.
+The API integrates Prometheus metrics to track total requests, errors, and the time taken for predictions.
 There is also a part of error handling for being sure that invalid input will not given as input.
 
 
@@ -769,7 +770,7 @@ A **trigger system** monitors the number of concurrent requests. If the requests
 
 --- question 27 fill here ---
 
-### Question 28 -> Lore
+### Question 28
 
 > **Did you implement anything extra in your project that is not covered by other questions? Maybe you implemented**
 > **a frontend for your API, use extra version control features, a drift detection service, a kubernetes cluster etc.**
@@ -783,7 +784,11 @@ A **trigger system** monitors the number of concurrent requests. If the requests
 >
 > Answer:
 
---- question 28 fill here ---
+We implemented a drift detection service to monitor changes in data distribution once the model is in production. This was particularly important because our initial dataset was relatively small, with only 1,500 images. Detecting data drift enables us to identify shifts in the input data, retrain the model with a larger dataset including new data, and mitigate performance degradation.
+
+To achieve this, we save key metrics from user-provided input images—such as average brightness, contrast, and sharpness—to a GCP bucket. We also store metrics from the predictions, such as the percentage of each class in the outputs. These metrics are then analyzed by a script, `data_drift.py`, using the Evidently framework to compare the training dataset with current data and detect drift.
+
+Additionally, we deployed a cloud-based drift detection API that provides access to the Evidently-generated drift reports. This service ensures we can proactively monitor data quality, maintain model performance, and respond efficiently to changing conditions in production.
 
 ### Question 29
 
