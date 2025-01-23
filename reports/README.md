@@ -81,7 +81,7 @@ will check the repositories and the code to verify your answers.
 * [X] Add pre-commit hooks to your version control setup (M18)
 * [ ] Add a continues workflow that triggers when data changes (M19)
 * [X] Add a continues workflow that triggers when changes to the model registry is made (M19)
-* [ ] Create a data storage in GCP Bucket for your data and link this with your data version control setup (M21)
+* [X] Create a data storage in GCP Bucket for your data and link this with your data version control setup (M21)
 * [X] Create a trigger workflow for automatically building your docker images (M21)
 * [X] Get your model training in GCP using either the Engine or Vertex AI (M21)
 * [X] Create a FastAPI application that can do inference using your model (M22)
@@ -383,9 +383,8 @@ The second and third metrics are, as usual, train loss and validation loss, comp
 We focused on evaluating two different models, a Unet that worked as a baseline, and a fine tuned Transformer, that is our best model.
 
 
-```markdown
 ![Unet_wandb](figures/Unet_Wandb.png)
-```
+
 In the first image is represented the experiment for Unet
 - **Validation Mean IOU**:
   - The mean IOU improves steadily, stabilizing around 100 epochs, indicating that the model is learning
@@ -394,9 +393,8 @@ In the first image is represented the experiment for Unet
 - **Validation Loss**:
   - Decreases consistently, showing good generalization
 
-```markdown
-![Unet_wandb](figures/Trans_Wandb.png)
-```
+![trans_wandb](figures/Trans_Wandb.png)
+
 In the second image is represented the experiment for Transformer
 - **Validation Mean IOU**:
   - Achieves higher IOU early, stabilizing before UNet.
@@ -404,9 +402,9 @@ In the second image is represented the experiment for Transformer
   - Stable training loss.
 - **Validation Loss**:
   - Increases after 100 epochs, potentially from overfitting, while the meanIoU still increases.
-```markdown
-![Unet_wandb](figures/Comparison_Wandb.png)
-```
+
+![comparison_wandb](figures/Comparison_Wandb.png)
+
 - Transformer shows better performance initially but overfits as epochs progress.
 - UNet remains more stable, though with higher overall loss.
 - UNet exhibits more fluctuation; Transformer is more stable.
@@ -546,7 +544,7 @@ focused on core functionalities.
 >
 > Answer:
 
---- question 19 fill here ---
+![GCP_Bucket](figures/GCP_Bucket.png)
 
 ### Question 20
 
@@ -604,7 +602,7 @@ scalability for our experiments.
 
 ## Deployment
 
-### Question 23 -> Manu
+### Question 23
 
 > **Did you manage to write an API for your model? If yes, explain how you did it and if you did anything special. If**
 > **not, explain how you would do it.**
@@ -617,7 +615,11 @@ scalability for our experiments.
 >
 > Answer:
 
---- question 23 fill here ---
+We created an API for the project using FastAPI, designed to handle image segmentation tasks. The main function is to have the possibility of choosing which model to use between Unet and Transformer and then, by uplaoding the images, the API will give it back the segmented images using the model chosen.
+Predictions are processed asynchronously to reduce latency.
+The API integrates Prometheus metrics to track total requests, errors, and the time taken for predictions. Moreover, it has been included data drifting for detecting changes in the data and in the predictions triggered by some metrics like average brightness, contrast and sharpness of the input images.
+There is also a part of error handling for being sure that invalid input will not given as input.
+
 
 ### Question 24
 
@@ -633,9 +635,19 @@ scalability for our experiments.
 >
 > Answer:
 
---- question 24 fill here ---
+We implemented the deploy of our API both locally and on cloud. Firstly, we created ad hoc docker files for containirizing all needed for the API working. By building that image and then by running the image by invoking -docker run -d -p 8080:8080 "image-name"-, you can access the API locally at "http://localhost:8080" and for using it it's suggested to visit "http://localhost:8080/docs".
+We deployed on Cloud Run, by building the image (for linux) and pushing it to the the artifact register. Once it's pushed, it's possible to deploy the run by invoking this command
+    "gcloud run deploy api \
+    --image europe-west1-docker.pkg.dev/project-id/api/api:latest \
+    --platform managed \
+    --region europe-west1 \
+    --allow-unauthenticated \
+    --memory=4Gi \"
+It's important to use the flag memory because the default setting is imposed to 512Mb that it's not enough. Then, after the deployment, it will be provided a URL of this type "https://segmentation-api-xyz.a.run.app" and as before, for using it, it is suggested to visit "https://segmentation-api-xyz.a.run.app/docs".
+If the API is already deployed and accessible (either locally or on GCloud), by invoking "curl URL" will be possible to use it.
+For discovering a little bit more about prometheus metrics, it's possible to visit /metrics page.
 
-### Question 25 -> Manu
+### Question 25
 
 > **Did you perform any unit testing and load testing of your API? If yes, explain how you did it and what results for**
 > **the load testing did you get. If not, explain how you would do it.**
@@ -648,7 +660,32 @@ scalability for our experiments.
 >
 > Answer:
 
---- question 25 fill here ---
+We performed both unit testing and load testing for the API.
+Unit testing was conducted using **FastAPI's TestClient**. Below are the key points:
+
+- **Root Endpoint (`/`)**:
+  - Verified the HTTP status code is `200`.
+  - Ensured the response contains the expected welcome message:
+    ```json
+    {
+      "message": "Welcome to the API for segment your underwater image. You can choose between two different models: unet and transformer. Upload your image and see the magic!!"
+    }
+    ```
+
+This test confirmed that the API's basic functionality is intact and correctly implemented.
+Load testing was conducted using **Locust** to simulate concurrent user activity.
+A task was created to:
+  - Randomly select a model type (`unet` or `transformer`).
+  - Send POST requests with an image to the `/predict/` endpoint.
+- The test targeted the deployed API at:
+https://api-288862848403.europe-west1.run.app or the chosen URL
+
+**Median Response Time**:
+- **81ms** for `transformer`.
+- **85ms** for `unet`.
+- **Requests Per Second (RPS)**: **0.7** aggregated across all tasks.
+- **Failures**: None recorded.
+
 
 ### Question 26
 
@@ -663,7 +700,27 @@ scalability for our experiments.
 >
 > Answer:
 
---- question 26 fill here ---
+Yes, we managed to implement monitoring for my deployed model.
+
+Used Prometheus to track API performance metrics, including:
+
+    - `api_requests_total`: Total number of API requests received.
+    - `api_errors_total`: Total number of errors encountered.
+    - `classification_time_seconds`: Time taken to process predictions.
+  - These metrics are exposed via the `/metrics` endpoint, which can be scraped by a Prometheus instance for real-time monitoring.
+
+**Current Setup**:
+  - Prometheus is not connected in the cloud, but the metrics are ready for integration with a monitoring system.
+
+ Implemented a **data drifting detection system** to monitor changes in input data and model predictions.
+- Key metrics tracked:
+  - Average brightness.
+  - Contrast.
+  - Sharpness of input images.
+
+A **trigger system** monitors the number of concurrent requests. If the requests exceed a defined threshold an alert is raised to prevent server overload.
+
+
 
 ## Overall discussion of project
 
