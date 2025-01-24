@@ -850,4 +850,8 @@ Predictions made by the models are saved to the GCP bucket, facilitating telemet
 >
 > Answer:
 
---- question 31 fill here ---
+All team members contributed actively to the project, fostering a collaborative environment and supporting one another whenever challenges arose. To ensure efficiency, tasks were divided weekly, and continuous communication was maintained throughout the process. This approach allowed us to adapt quickly to any issues and keep the project moving forward.
+
+We are highly satisfied with the efforts and contributions of each member. Given the interconnected nature of our work, it was common for team members to assist with multiple tasks, providing input and support where needed. This collaboration blurred the lines of individual responsibilities, making it difficult to assign specific credit for particular aspects of the project.
+
+However, a detailed examination of the repository’s push history clearly demonstrates that all members made meaningful contributions. Each individual’s commitment to the team’s success is evident, whether through direct implementation of code, debugging, or offering creative solutions to complex problems. Overall, we believe our combined efforts reflect a strong team dynamic and a shared dedication to achieving our goals.
