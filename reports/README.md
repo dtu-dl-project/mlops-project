@@ -805,7 +805,21 @@ Additionally, we deployed a cloud-based drift detection API that provides access
 >
 > Answer:
 
---- question 29 fill here ---
+![System architecture](figures/MLOps_schema.png)
+
+The schema starts locally, where we worked with Pytorch, Pytorch Lightning and Transformers library from Hugging face to develop a model.
+Locally also Hydra and Typer are used for managing configuration files. WandB (Weights & Biases) is employed for experiment tracking and logging.
+Development is structured using a cookiecutter project template, which ensures a standardized project structure. In the template dependencies are specified, but are not drawn as they were managed with Conda by some members and with Uv by others.
+Then, docker ensures containerization, enabling consistency between development and production environments. Hence it was used in many part of the flow.
+We used to debug and optimize performance profilers and debugging tools.
+Data for training is stored locally and consumed during model development.
+
+Regarding version Control and CI/CD, code is version-controlled with Git. Moreover, integration with GitHub Actions enables automated Continuous Integration (CI) pipelines. These pipelines enforce practices like linting and testing to ensure code quality. A Cloud Build Trigger connects GitHub repositories to the cloud, allowing seamless synchronization between local and cloud environments.
+The cloud infrastructure used revolves around Google Cloud Platform (GCP) services. Trained models and data are stored in a GCP Bucket, ensuring scalability and persistence. After training, models are containerized and stored in an Artifact Registry.
+Once deployed, models are served using GCP Compute Engine, Vertex AI, or Cloud Run. These services manage the underlying infrastructure, enabling scalable and efficient model inference. End-users interact with the models via APIs, built using FastAPI for high-performance request handling.
+
+Finally, we consider monitoring and testing. GCP services like Logging are used to track errors, monitor system health, and ensure smooth operations. For load testing, Locust simulates user requests, evaluating the API's performance under various workloads.
+Predictions made by the models are saved to the GCP bucket, facilitating telemetry and monitoring for data drift detection. This feedback loop helps maintain the model's performance over time.
 
 ### Question 30
 
