@@ -757,7 +757,7 @@ A **trigger system** monitors the number of concurrent requests. If the requests
 
 ### Question 27
 
-> **How many credits did you end up using during the project and what service was most expensive? In general what do**
+> **"How many credits did you end up using during the project and what service was most expensive?" In general what do**
 > **you think about working in the cloud?**
 >
 > Recommended answer length: 100-200 words.
@@ -768,7 +768,9 @@ A **trigger system** monitors the number of concurrent requests. If the requests
 >
 > Answer:
 
---- question 27 fill here ---
+Group member 1 used $0.25 credits, Group member 2 used $0.14 credits, Group member 3 used $0.19 credits, and Group member 4 used $0.23 credits, totaling $0.81 credits spent during development. The $50 credits provided by the teacher were more than enough for the project. The most expensive services were Cloud Storage, due to our dataset of 1,500 images occupying 2.3 GB, and Cloud Run, as we deployed multiple models to test our application.
+
+Initially, working in the cloud was challenging, especially during the setup phase and while navigating the graphical user interface. Despite these hurdles, the cloud environment proved extremely valuable once configured. It allowed for efficient deployment of our application, resource management, and seamless collaboration within the team. The scalability offered by the cloud was particularly beneficial, making it a key component of our project’s success.
 
 ### Question 28
 
@@ -833,7 +835,15 @@ Predictions made by the models are saved to the GCP bucket, facilitating telemet
 >
 > Answer:
 
---- question 30 fill here ---
+The biggest challenges in our project revolved around the dataset, model implementation, and cloud-based workflows.
+
+Initially, we struggled with the dataset due to inconsistencies such as varying image sizes and mask errors, where pixels were classified into non-existent classes. To address the mask issue, we found a GitHub repository offering a corrected version of the dataset. For the image size inconsistency, resizing images during dataset loading solved the problem efficiently.
+
+Model implementation also posed difficulties. Our initial UNet model was not performing as expected, and we spent significant time debugging it. By comparing our implementation with a GitHub reference, we identified and resolved the issues. For the Transformer model, the challenge lay in interacting with a dataset that wasn’t in the Hugging Face format, requiring custom preprocessing and integration.
+
+Setting up the cloud environment consumed a lot of time, particularly in navigating the graphical interface of Google Cloud Platform. This made tasks like deploying models and managing resources more complex. Another major challenge was automating model testing upon adding them to the model registry. Interfacing with the graphical interface of Weights & Biases and creating automation for alias assignments proved challenging.
+
+We overcame these struggles by leveraging community resources, such as GitHub repositories, and investing time in understanding the tools.
 
 ### Question 31
 
